@@ -22,6 +22,7 @@
 #                                                  any-key stop, the «يُتلى الآن» card and the Quran stay; the screen opens from the app menu (long OK on an app) or the card
 #   optimize/saver.sh watchnext off                home screen: «أكمل المشاهدة» under the favourites: on (default) or off. It shows once the home app may
 #                                                  read the TV's Watch Next list (the owner allows it once from the settings row)
+#   optimize/saver.sh watchnextsize large          home screen: card size in «أكمل المشاهدة»: normal, large, larger, or largest
 #   optimize/saver.sh updatebell off               home screen: the «جرس التحديثات» bell: on (default) or off. It shows only while the Play Store has app updates waiting;
 #                                                  off removes only the bell
 #   optimize/saver.sh appearance auto              home screen: «المظهر ← الإضاءة», dark (default), light, or auto (light from sunrise until Maghrib in the city)
@@ -193,6 +194,7 @@ case "${1:-}" in
   listenpill) set1 listenpill "${2:?usage: optimize/saver.sh listenpill on|off}" ;;
   updatebell) set1 updatebell "${2:?usage: optimize/saver.sh updatebell on|off}" ;;
   watchnext) set1 watchnext "${2:?usage: optimize/saver.sh watchnext on|off}" ;;
+  watchnextsize) set1 watchnextsize "${2:?usage: optimize/saver.sh watchnextsize normal|large|larger|largest}" ;;
   appearance) set1 appearance "${2:?usage: optimize/saver.sh appearance dark|light|auto}" ;;
   look) set1 look "${2:?usage: optimize/saver.sh look glass|graphite|navy|clean}" ;;
   adhanbar) set1 adhanbar "${2:?usage: optimize/saver.sh adhanbar on|off}" ;;

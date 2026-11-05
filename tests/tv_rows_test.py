@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""«أكمل المشاهدة» on the home screen (the idea from talkies, MIT): one row right under the favourites from the TV's Watch Next list.
+"""«أكمل المشاهدة» on the home screen (the idea from talkies, MIT): a larger row above the favourites from the TV's Watch Next list.
 After the TV test of 3.145 the owner wanted only that row (the apps' own rows looked like ads, and the rows were «a mess»: gaps, a card
 cut at the left, English titles, the clock and the photo gone). TvRowsPick runs for real here (tests/TvRowsRun.java); the reading,
 the permission, the setting and the home's wiring are checked in the source. Needs javac.
@@ -27,14 +27,14 @@ check("only the TV's Watch Next list is read: no apps' rows, no chooser of rows 
       and not (HOME / "ChannelsActivity.java").exists() and "ChannelsActivity" not in manifest and "ChannelsActivity" not in settings)
 check("the row's name is Arabic whatever the apps call it", "name.setText(TvRowsPick.WATCH_NEXT_TITLE);" in main and 'WATCH_NEXT_TITLE = "أكمل المشاهدة"' in pick)
 show = fn(main, "private void showTvRows(List<TvRows.Row> rows)")
-check("the row sits in the first screen, right under the favourites, inside the same band padding (not under it, below the clock's screen)",
+check("the larger row sits above the favourites in the first screen (not below the clock's screen)",
       "bottom.addView(tvRowsBox, new LinearLayout.LayoutParams(-1, -2));" in main and "content.addView(tvRowsBox" not in main
-      and main.index("bottom.addView(dockRow") < main.index("bottom.addView(tvRowsBox") and "tvRowsBox.setPadding(dp(20), 0, dp(20), 0);" in main
+      and main.index("bottom.addView(tvRowsBox") < main.index("bottom.addView(dockRow") and "tvRowsBox.setPadding(dp(20), 0, dp(20), 0);" in main
       and "dockRow.setPadding(dp(20), dp(22), dp(20), dp(22));" in main)
-check("no card is cut: no horizontal scroll, at most as many cards as favourites, each a favourite's width (rowCell, the dock's own rule)",
-      "HorizontalScrollView" not in main and "int n = TvRowsPick.cells(dockCards.size(), MIN_DOCK);" in show and "line.addView(box, rowCell(i, n, -2));" in show
+check("no card is cut: no horizontal scroll and at most four cards for the large setting, with the dock's row spacing", 
+      "HorizontalScrollView" not in main and "int n = TvRowsPick.cells(dockCards.size(), MIN_DOCK, tvCardSize);" in show and "line.addView(box, rowCell(i, n, -2));" in show
       and "int shown = Math.min(n, r.items.size());" in show and "line.addView(new View(this), rowCell(i, n, 1));" in show)
-check("tight: the name 14 dp under the favourites and 10 dp over its cards, one row only", "tvRowsBox.addView(name, llp(-2, -2, 0, dp(14), 0, dp(10)));" in show
+check("the larger row name is 14 sp with compact spacing, one row only", "TextView name = text(14, \"sans-serif-medium\"" in show
       and "TvRows.Row row = new Row();" not in show)
 card = fn(main, "private View tvCard(TvRows.Item it)")
 check("on a card the clock and the photo stay: the page stays at the top, nothing dims, the episode's name is the line above the favourites",
@@ -42,9 +42,11 @@ check("on a card the clock and the photo stay: the page stays at the top, nothin
       and "fadeGlow(0.35f)" not in card and "title.animate().alpha(1f)" in card and "scrollToTvRow" not in main)
 check("a card grows as a favourite does (1.12, the same spring)", "scaleTo(v, has ? 1.12f : 1f);" in card)
 wire = fn(main, "private void wireFocus()")
-check("▼ from the favourites goes to the row; ▲ from the first apps row comes from it; ▲ from it to the favourites",
-      "c.setNextFocusDownId(!tvCards.isEmpty() ? tvCards.get(0).get(" in wire and "lastTv != null ? lastTv.get(Math.min(col, lastTv.size() - 1)).getId()" in wire
-      and ": d > 0 ? dockCards.get(Math.min(i, d - 1)).getId() : topId);" in wire)
+check("▼ from the header enters Watch Next, ▼ from it reaches favourites, then the app grid",
+      "p.setNextFocusDownId(card != null ? card.getId() : firstContentId" in wire
+      and "c.setNextFocusUpId(watchId != View.NO_ID ? tvCards.get(0).get(Math.min(i, tvCards.get(0).size() - 1)).getId() : topId);" in wire
+      and ": d > 0 ? dockCards.get(Math.min(i, d - 1)).getId()" in wire
+      and "c.setNextFocusDownId(g > 0 ? gridCards.get(Math.min(i, g - 1)).getId() : c.getId());" in wire)
 check("the card's picture: its title on a plain card until it comes; how far in as a gold line from the right",
       "tvPics.put(it, img);" in card and "plain.setText(it.title);" in card and "Gravity.BOTTOM | Gravity.RIGHT" in card and "it.progress" in card)
 
@@ -58,7 +60,7 @@ saver = read(ROOT / "optimize/saver.sh")
 check("the setting: on by default, in the provider after the other columns, --es watchnext on|off, saver.sh watchnext, show",
       'boolean watchNext() { return sp.getBoolean("watchNext", true); }' in prefs_s and '"update_bell", "watch_next"' in provider
       and 'p.watchNext() ? "1" : "0"' in provider and 'i.getStringExtra("watchnext")' in recv and '"\\nwatchnext: "' in recv
-      and 'watchnext) set1 watchnext' in saver)
+      and 'watchnext) set1 watchnext' in saver and 'watchnextsize) set1 watchnextsize' in saver and 'watch_next_size' in provider)
 check("the home reads it (an older screensaver says nothing: on) and shows no row when it is off", 'cur.getColumnIndex("watch_next")' in snap
       and "if (!TvRows.allowed(this) || !ConfigSnapshot.read(this).watchNextOn) {" in load)
 row = settings[settings.index('row("أكمل المشاهدة"'):settings.index('render(); } });', settings.index('row("أكمل المشاهدة"'))]
@@ -132,18 +134,19 @@ check("a small picture is taken as it is; a picture with no size is none", r["sa
 check("a content:// picture only from the publishing app's own provider", (r["provider_own"], r["provider_other"], r["provider_none"]) == ("true", "false", "false"))
 check("the rows' signature tells the same rows from changed ones", r["sig_same"] == "true" and r["sig_diff"] == "false", (r["sig_same"], r["sig_diff"]))
 # ---- the TV test of 3.147: one huge card filled two thirds of the screen and pushed the favourites up over the clock
-check("«أكمل المشاهدة» is never one cell: before the favourites are on screen it is cut as the least of them (5), then as they are",
-      r["cells_before"] == "5" and r["cells_after"] == "7", (r["cells_before"], r["cells_after"]))
-check("at 960x540 dp a card is a favourite tile's size: 148.8x83.7 dp with 5 favourites, 64.4x36.2 with 10 (one cell would be 824x463.5)",
-      r["card_5"] == "148.8x83.7" and r["card_10"] == "64.4x36.2" and r["card_1"] == "824.0x463.5", (r["card_5"], r["card_10"], r["card_1"]))
-check("…cut like the favourites (the dock band's 20 dp padding, rowCell) and built again when their number changes",
+check("«أكمل المشاهدة» is capped at four larger cards before and after the favourites load",
+      r["cells_before"] == "4" and r["cells_after"] == "4" and r["cells_normal"] == "7" and r["cells_larger"] == "3" and r["cells_largest"] == "2", (r["cells_before"], r["cells_after"]))
+check("at 960x540 dp four Watch Next cards are 191x107.4 and do not run off the screen",
+      r["card_4"] == "191.0x107.4" and r["card_1"] == "824.0x463.5", (r["card_4"], r["card_1"]))
+check("…cut to the same capped cell count and rebuilt if that count changes",
       "tvRowsBox.setPadding(dp(20), 0, dp(20), 0);" in main and "dockRow.setPadding(dp(20), dp(22), dp(20), dp(22));" in main
-      and "if (!tvShown.isEmpty() && tvCells != dockCards.size()) showTvRows(tvShown);" in main)
+      and "tvShownCardSize" in main and "TvRowsPick.cells(dockCards.size(), MIN_DOCK, tvCardSize)" in main)
 # the first screen at 960x540 dp with the row (the tallest case, 5 favourites): estimated as the home lays it out (sp ~ dp x 1.2 for a line)
-card5 = float(r["card_5"].split("x")[1])
+watch_height = float(r["card_4"].split("x")[1])
+favourite_height = float(r["card_5"].split("x")[1])
 header = 36 + (15 * 1.2 + 4) + (12 * 1.2 + 5) + (58 * 1.25 - 2) + (14 * 1.2 - 2)        # top, greeting, weather, clock, date
-bottom = 30 + (11 * 1.2 + 24 + card5 * 1.12) + (22 + card5 * 1.12 + 22) + (34 * 1.2 + 14)  # margin, row (label, focused card), dock band, title
-check(f"at 960x540 dp the favourites and the row stay under the clock: the clock block ends at ~{header:.0f} dp, the favourites' block starts at ~{540 - bottom:.0f} dp",
+bottom = 30 + (14 * 1.2 + 20 + watch_height) + (22 + favourite_height + 22) + (34 * 1.2 + 14)  # margin, Watch Next row, dock band, title
+check(f"at 960x540 dp the row and favourites stay below the clock: it ends at ~{header:.0f} dp, the row starts at ~{540 - bottom:.0f} dp",
       540 - bottom > header + 8, (header, 540 - bottom))
 check("how far in: a fraction up to 1, unknown without a position or a length",
       r["progress_half"] == "0.5" and r["progress_over"] == "1.0" and r["progress_unknown"] == "-1.0 -1.0", (r["progress_half"], r["progress_over"], r["progress_unknown"]))

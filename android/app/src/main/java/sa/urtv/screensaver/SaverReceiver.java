@@ -20,7 +20,7 @@ import java.util.Locale;
  *   am broadcast -n sa.urtv.screensaver/.SaverReceiver -a sa.urtv.screensaver.CITIES
  *   am broadcast -n sa.urtv.screensaver/.SaverReceiver -a sa.urtv.screensaver.SET
  *       [--es city 'الرس'] [--es lat 25.86 --es lon 43.49 --es tz Asia/Kuwait]   (tz is needed for a place that is not in the list) [--es teams '136013:Al-Hilal,150643:Al-Zulfi']
- *       [--es panel prayers] [--es panel2 hourly|none] [--es home_panel prayers,hourly,verse|none] [--es greeting on|off] [--es listenpill on|off] [--es updatebell on|off] [--es watchnext on|off] [--es appearance dark|light|auto] [--es look glass|graphite|navy|clean] [--es adhanbar on|off] [--es yearstrip on|off] [--es minrating 7]
+ *       [--es panel prayers] [--es panel2 hourly|none] [--es home_panel prayers,hourly,verse|none] [--es greeting on|off] [--es listenpill on|off] [--es updatebell on|off] [--es watchnext on|off] [--es watchnextsize normal|large|larger|largest] [--es appearance dark|light|auto] [--es look glass|graphite|navy|clean] [--es adhanbar on|off] [--es yearstrip on|off] [--es minrating 7]
  *       [--es sunrise on|off] [--es prayerbar on|off] [--es wxmore on|off] [--es months default|levant] [--es genres Drama,Comedy] [--es langs English]
  *       [--es photos 30] [--es idle 10] [--es digits hindi|latin] [--es hijrioffset -2..2] [--es clock24 on|off]
  *       [--es cardstyle current|dark1|glass1|dark3|glass3] [--es national auto|off]
@@ -238,6 +238,9 @@ public class SaverReceiver extends BroadcastReceiver {
         String watchNext = i.getStringExtra("watchnext");
         if (watchNext != null && !"on".equals(watchNext) && !"off".equals(watchNext))
             return "error: watchnext is one of on off";
+        String watchNextSize = i.getStringExtra("watchnextsize");
+        if (watchNextSize != null && !Arrays.asList("normal", "large", "larger", "largest").contains(watchNextSize))
+            return "error: watchnextsize is one of normal large larger largest";
         String updateBell = i.getStringExtra("updatebell");
         if (updateBell != null && !"on".equals(updateBell) && !"off".equals(updateBell))
             return "error: updatebell is one of on off";
@@ -344,6 +347,7 @@ public class SaverReceiver extends BroadcastReceiver {
         if (listenPill != null) p.setListenPill("on".equals(listenPill));
         if (updateBell != null) p.setUpdateBell("on".equals(updateBell));
         if (watchNext != null) p.setWatchNext("on".equals(watchNext));
+        if (watchNextSize != null) p.setWatchNextSize(watchNextSize);
         if (appearance != null) p.setAppearance(appearance);
         if (look != null) p.setLook(look);
         if (adhanBar != null) p.setAdhanBar("on".equals(adhanBar));
@@ -485,6 +489,7 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nlistenpill: " + (p.listenPill() ? "on" : "off")
             + "\nupdatebell: " + (p.updateBell() ? "on" : "off")
             + "\nwatchnext: " + (p.watchNext() ? "on" : "off")
+            + "\nwatchnextsize: " + p.watchNextSize()
             + "\nappearance: " + p.appearance()
             + "\nlook: " + p.look()
             + "\nadhanbar: " + (p.adhanBar() ? "on" : "off")

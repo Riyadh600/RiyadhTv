@@ -50,9 +50,12 @@ public final class TvRowsRun {
         put("sig_diff", TvRowsPick.signature(Arrays.asList(new String[]{"a", "t1"}, new String[]{"b"})).equals(TvRowsPick.signature(Arrays.asList(new String[]{"a"}, new String[]{"t1", "b"}))));
 
         // the row on a 1080p TV (960x540 dp): the hero's 48 dp sides plus the dock band's 20 dp padding, before and after the favourites come
-        put("cells_before", TvRowsPick.cells(0, 5));
-        put("cells_after", TvRowsPick.cells(7, 5));
-        for (int n : new int[] {1, 5, 7, 10})
+        put("cells_before", TvRowsPick.cells(0, 5, "large"));
+        put("cells_after", TvRowsPick.cells(7, 5, "large"));
+        put("cells_normal", TvRowsPick.cells(7, 5, "normal"));
+        put("cells_larger", TvRowsPick.cells(7, 5, "larger"));
+        put("cells_largest", TvRowsPick.cells(7, 5, "largest"));
+        for (int n : new int[] {1, 4, 5, 7, 10})
             put("card_" + n, String.format(java.util.Locale.US, "%.1fx%.1f", TvRowsPick.cellWidth(960, 68, n), TvRowsPick.cardHeight(TvRowsPick.cellWidth(960, 68, n))));
 
         put("progress_half", TvRowsPick.progress(30, 60));

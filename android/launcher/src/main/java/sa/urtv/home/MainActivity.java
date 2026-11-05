@@ -410,16 +410,15 @@ public class MainActivity extends Activity {
         band.setColor(0x1FFFFFFF);
         band.setStroke(dp(1), 0x14FFFFFF);
         dockRow.setBackground(band);
-        bottom.addView(dockRow, new LinearLayout.LayoutParams(-1, -2));
 
-        // «أكمل المشاهدة»: one row right under the favourites, in the first screen with the clock and the photo (empty until it is
-        // allowed and has something); the dock band's padding, so its cards sit exactly under the favourites
+        // «أكمل المشاهدة»: larger cards above the favourites, in the first screen with the clock and the photo.
         tvRowsBox = new LinearLayout(this);
         tvRowsBox.setOrientation(LinearLayout.VERTICAL);
         tvRowsBox.setClipChildren(false);
         tvRowsBox.setClipToPadding(false);
-        tvRowsBox.setPadding(dp(20), 0, dp(20), 0);   // the dock band's own padding: its cells are the favourites' cells, a card a tile's size
+        tvRowsBox.setPadding(dp(20), 0, dp(20), 0);
         bottom.addView(tvRowsBox, new LinearLayout.LayoutParams(-1, -2));
+        bottom.addView(dockRow, new LinearLayout.LayoutParams(-1, -2));
 
         appsLabel = text(11, "sans-serif-medium", 0x99FFFFFF);
         appsLabel.setText("كل التطبيقات");
@@ -827,7 +826,8 @@ public class MainActivity extends Activity {
         if (entranceDue) { entranceDue = false; playEntrance(); }
         applyPendingFocus();
         beginPendingEdit();
-        if (!tvShown.isEmpty() && tvCells != dockCards.size()) showTvRows(tvShown);   // the favourites came (or changed): the row's cells follow
+        if (!tvShown.isEmpty() && (tvCells != TvRowsPick.cells(dockCards.size(), MIN_DOCK, tvCardSize) || !tvShownCardSize.equals(tvCardSize)))
+            showTvRows(tvShown);
         addGridRows(rest, 0, gen);
     }
 
@@ -985,44 +985,46 @@ public class MainActivity extends Activity {
     /** Explicit D-pad targets: one row per press, ends of rows and of the top bar don't wrap. */
     private void wireFocus() {
         int d = dockCards.size(), g = gridCards.size();
-        // the «المهام» card, when it is among the home cards, is a stop between the pills and the dock
+        // the «المهام» card, when present, stays between the pills and the content rows
         View card = homeCard == null ? null : homeCard.live();
         int dockId = d > 0 ? dockCards.get(Math.min(d - 1, d / 2)).getId() : View.NO_ID;
+        int watchId = !tvCards.isEmpty() && !tvCards.get(0).isEmpty() ? tvCards.get(0).get(0).getId() : View.NO_ID;
+        int firstContentId = watchId != View.NO_ID ? watchId : dockId;
         for (int i = 0; i < pills.size(); i++) {
             View p = pills.get(i);
             p.setNextFocusLeftId(i == 0 ? p.getId() : pills.get(i - 1).getId());
             p.setNextFocusRightId(i == pills.size() - 1 ? p.getId() : pills.get(i + 1).getId());
             p.setNextFocusUpId(p.getId());
-            p.setNextFocusDownId(card != null ? card.getId() : dockId != View.NO_ID ? dockId : p.getId());
+            p.setNextFocusDownId(card != null ? card.getId() : firstContentId != View.NO_ID ? firstContentId : p.getId());
         }
         int topId = card != null ? card.getId() : pills.get(0).getId();
-        if (nowCard != null) {   // the «يُتلى الآن» card: down to the cards or the dock, left and up to the pills (right: the end of the row)
+        if (nowCard != null) {   // the «يُتلى الآن» card: down to the content, left and up to the pills
             nowCard.setNextFocusLeftId(pills.get(0).getId());
             nowCard.setNextFocusUpId(pills.get(0).getId());
             nowCard.setNextFocusRightId(nowCard.getId());
-            nowCard.setNextFocusDownId(card != null ? card.getId() : dockId != View.NO_ID ? dockId : nowCard.getId());
+            nowCard.setNextFocusDownId(card != null ? card.getId() : firstContentId != View.NO_ID ? firstContentId : nowCard.getId());
         }
         if (card != null) {
             card.setNextFocusLeftId(card.getId());   // nothing beside it to move to: stay on it
             card.setNextFocusRightId(card.getId());
             card.setNextFocusUpId(pills.get(0).getId());   // a pill's own focus moves this to that pill, see pill()
-            card.setNextFocusDownId(dockId != View.NO_ID ? dockId : card.getId());
+            card.setNextFocusDownId(firstContentId != View.NO_ID ? firstContentId : card.getId());
         }
         for (int i = 0; i < d; i++) {
             View c = dockCards.get(i);
-            c.setNextFocusUpId(topId);
+            c.setNextFocusUpId(watchId != View.NO_ID ? tvCards.get(0).get(Math.min(i, tvCards.get(0).size() - 1)).getId() : topId);
             c.setNextFocusLeftId(i == 0 ? c.getId() : dockCards.get(i - 1).getId());
             c.setNextFocusRightId(i == d - 1 ? c.getId() : dockCards.get(i + 1).getId());
-            c.setNextFocusDownId(!tvCards.isEmpty() ? tvCards.get(0).get(Math.min(i, tvCards.get(0).size() - 1)).getId()
-                    : g > 0 ? gridCards.get(Math.min(i, g - 1)).getId() : c.getId());
+            c.setNextFocusDownId(g > 0 ? gridCards.get(Math.min(i, g - 1)).getId() : c.getId());
         }
-        for (int r = 0; r < tvCards.size(); r++) {   // «أكمل المشاهدة»: a row up to the one above (the favourites), down to the next (the apps)
+        for (int r = 0; r < tvCards.size(); r++) {   // «أكمل المشاهدة»: up to the header, down to the favourites then the apps
             List<View> row = tvCards.get(r);
             for (int i = 0; i < row.size(); i++) {
                 View c = row.get(i);
                 c.setNextFocusUpId(r > 0 ? tvCards.get(r - 1).get(Math.min(i, tvCards.get(r - 1).size() - 1)).getId()
-                        : d > 0 ? dockCards.get(Math.min(i, d - 1)).getId() : topId);
+                        : topId);
                 c.setNextFocusDownId(r < tvCards.size() - 1 ? tvCards.get(r + 1).get(Math.min(i, tvCards.get(r + 1).size() - 1)).getId()
+                        : d > 0 ? dockCards.get(Math.min(i, d - 1)).getId()
                         : g > 0 ? gridCards.get(Math.min(i, g - 1)).getId() : c.getId());
                 c.setNextFocusLeftId(i == row.size() - 1 ? c.getId() : row.get(i + 1).getId());   // the row reads from the right
                 c.setNextFocusRightId(i == 0 ? c.getId() : row.get(i - 1).getId());
@@ -1034,8 +1036,8 @@ public class MainActivity extends Activity {
             int r = j / cols, col = j % cols;
             List<View> lastTv = tvCards.isEmpty() ? null : tvCards.get(tvCards.size() - 1);
             c.setNextFocusUpId(r == 0
-                    ? (lastTv != null ? lastTv.get(Math.min(col, lastTv.size() - 1)).getId()
-                       : d > 0 ? dockCards.get(Math.min(col, d - 1)).getId() : topId)
+                    ? (d > 0 ? dockCards.get(Math.min(col, d - 1)).getId()
+                       : lastTv != null ? lastTv.get(Math.min(col, lastTv.size() - 1)).getId() : topId)
                     : gridCards.get(j - cols).getId());
             c.setNextFocusDownId(j + cols < g ? gridCards.get(j + cols).getId()
                     : r < lastRow ? gridCards.get(g - 1).getId() : c.getId());
@@ -1143,7 +1145,8 @@ public class MainActivity extends Activity {
     private static final long TV_PICTURES_MS = 8000;   // the pictures of one visit; what is not there by then keeps its title
     private String tvShownSig = "";
     private List<TvRows.Row> tvShown = new ArrayList<>();
-    private int tvCells;   // the cells «أكمل المشاهدة» was cut into (the favourites' count then): built again when that changes
+    private String tvCardSize = "normal", tvShownCardSize = "normal";
+    private int tvCells;   // the cell count used to build «أكمل المشاهدة»; rebuilt when the favourites or size setting changes
     private final java.util.Map<TvRows.Item, ImageView> tvPics = new java.util.HashMap<>();
     private final java.util.Map<TvRows.Item, TextView> tvPlain = new java.util.HashMap<>();
     private final java.util.Set<TvRows.Item> tvPictured = new java.util.HashSet<>();
@@ -1151,10 +1154,13 @@ public class MainActivity extends Activity {
     /** The rows' words first (quick), shown; then their pictures as they come, within TV_PICTURES_MS. */
     private void loadTvRows() {
         if (tvRowsBox == null) return;
-        if (!TvRows.allowed(this) || !ConfigSnapshot.read(this).watchNextOn) {   // not allowed, or turned off in the settings: no row
+        ConfigSnapshot config = ConfigSnapshot.read(this);
+        if (!TvRows.allowed(this) || !config.watchNextOn) {   // not allowed, or turned off in the settings: no row
             if (tvRowsBox.getChildCount() > 0) { tvShownSig = ""; showTvRows(new ArrayList<>()); }
             return;
         }
+        tvCardSize = config.watchNextSize;
+        final boolean sizeChanged = !tvShownCardSize.equals(tvCardSize);
         final int gen = ++tvRowsGen;
         if (tvLoader.isShutdown()) return;
         tvLoader.execute(() -> {
@@ -1165,7 +1171,7 @@ public class MainActivity extends Activity {
                 java.util.concurrent.CountDownLatch shown = new java.util.concurrent.CountDownLatch(1);
                 runOnUiThread(() -> {
                     if (gen == tvRowsGen && !isDestroyed()) {
-                        if (!sig.equals(tvShownSig)) { tvShownSig = sig; showTvRows(rows); }   // the same rows: nothing is built again
+                        if (!sig.equals(tvShownSig) || sizeChanged) { tvShownSig = sig; showTvRows(rows); }
                         on[0] = tvShown;
                     }
                     shown.countDown();
@@ -1208,8 +1214,8 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * «أكمل المشاهدة»: its name, then as many cards as there are favourites, each a favourite's width right under one (MainActivity.rowCell,
-     * the band's padding): no row that runs off the screen, nothing cut. Fewer cards keep the favourites' widths, the rest is empty.
+     * «أكمل المشاهدة»: its name, then up to four larger cards above the favourites. Capping the count keeps each card readable and
+     * prevents the row from running off screen; fewer cards leave the remaining space empty.
      */
     private void showTvRows(List<TvRows.Row> rows) {
         boolean had = getCurrentFocus() != null && isInTvRows(getCurrentFocus());
@@ -1222,14 +1228,15 @@ public class MainActivity extends Activity {
         tvRowsBox.removeAllViews();
         tvCards.clear();
         tvNames.clear();
-        int n = TvRowsPick.cells(dockCards.size(), MIN_DOCK);   // never one cell: see TvRowsPick.cells
+        int n = TvRowsPick.cells(dockCards.size(), MIN_DOCK, tvCardSize);
         tvCells = n;
+        tvShownCardSize = tvCardSize;
         for (TvRows.Row r : rows) {
-            TextView name = text(11, "sans-serif-medium", lightNow ? Look.LIGHT_LOOK.gold : GOLD);
+            TextView name = text(14, "sans-serif-medium", lightNow ? Look.LIGHT_LOOK.gold : GOLD);
             name.setShadowLayer(dp(3), 0, dp(1), Look.of(lightNow).shadow);   // a halo in the light look, as the clock's lines
             name.setText(TvRowsPick.WATCH_NEXT_TITLE);   // Arabic, whatever the apps call it
             tvNames.add(name);
-            tvRowsBox.addView(name, llp(-2, -2, 0, dp(14), 0, dp(10)));
+            tvRowsBox.addView(name, llp(-2, -2, 0, dp(10), 0, dp(10)));
             LinearLayout line = new LinearLayout(this);
             line.setOrientation(LinearLayout.HORIZONTAL);
             line.setClipChildren(false);
@@ -1241,7 +1248,7 @@ public class MainActivity extends Activity {
                 line.addView(box, rowCell(i, n, -2));
                 cards.add(((ViewGroup) box).getChildAt(0));
             }
-            for (int i = shown; i < n; i++) line.addView(new View(this), rowCell(i, n, 1));   // fewer cards: still a favourite's width each
+            for (int i = shown; i < n; i++) line.addView(new View(this), rowCell(i, n, 1));   // keep the other card columns aligned
             tvRowsBox.addView(line, new LinearLayout.LayoutParams(-1, -2));
             tvCards.add(cards);
         }

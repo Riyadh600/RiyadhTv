@@ -328,6 +328,8 @@ public class SettingsActivity extends Activity {
                 prefs.setWatchNext(!prefs.watchNext());
                 if (prefs.watchNext() && !homeMayReadWatchNext()) openWatchNextPermission();
                 render(); } });
+        row("حجم بطاقات أكمل المشاهدة", Prefs.watchNextSizeLabel(prefs.watchNextSize()), R.drawable.ic_eye,
+            new Runnable() { public void run() { pickWatchNextSize(); } });
         row("أسماء المصادر", "غيّر اسم كل مصدر، مثل PS5", R.drawable.ic_settings,
             new Runnable() { public void run() { openInputNames(); } });
         row("تعديل المفضلة", "تحريك التطبيقات على الشاشة الرئيسية وحذفها", R.drawable.ic_star,
@@ -867,7 +869,23 @@ public class SettingsActivity extends Activity {
 
     private String watchNextLabel() {
         if (!prefs.watchNext()) return "متوقف";
-        return homeMayReadWatchNext() ? "يعمل · ما وقفته في نصه، تحت المفضلة" : "يعمل · يحتاج السماح مرة واحدة: اختيار";
+        return homeMayReadWatchNext() ? "يعمل · فوق المفضلة" : "يعمل · يحتاج السماح مرة واحدة: اختيار";
+    }
+
+    private void pickWatchNextSize() {
+        String[] labels = new String[Prefs.WATCH_NEXT_SIZES.length];
+        int selected = 0;
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = Prefs.WATCH_NEXT_SIZES[i][1];
+            if (Prefs.WATCH_NEXT_SIZES[i][0].equals(prefs.watchNextSize())) selected = i;
+        }
+        new Dlg(this).setTitle("حجم بطاقات أكمل المشاهدة")
+            .setSingleChoiceItems(labels, selected, (d, i) -> {
+                prefs.setWatchNextSize(Prefs.WATCH_NEXT_SIZES[i][0]);
+                d.dismiss();
+                render();
+            })
+            .show();
     }
 
     /** The home app's one question for the TV's list («السماح»); it closes by itself when that is allowed already. */

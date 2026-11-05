@@ -94,6 +94,8 @@ final class Prefs {
     static final String[][] MK_STYLES = {{"arrows", "الاتجاه فقط ▲▼"}, {"prices", "السعر والنسبة"}};
     // the size of the screensaver's clock (sent as #clocksize=; large is what it always was)
     static final String[][] CLOCK_SIZES = {{"large", "كبيرة"}, {"medium", "متوسطة"}, {"small", "صغيرة"}};
+    // the launcher's Watch Next cards: natural matches the favourites row; the other steps show fewer, larger cards
+    static final String[][] WATCH_NEXT_SIZES = {{"normal", "طبيعي"}, {"large", "كبير"}, {"larger", "أكبر"}, {"largest", "الأكبر"}};
     // what the bottom-left slot shows (sent to the page as #slot=; matches is what it always showed)
     static final String[][] SLOTS = {{"matches", "المباريات"}, {"weather", "الطقس"}, {"fasting", "الصيام"},
         {"countdown", "عدّ تنازلي"}, {"markets", "الأسواق"}, {"none", "بدون"}};
@@ -711,9 +713,19 @@ final class Prefs {
 
     /** «جرس التحديثات» on the home screen: on by default (it shows only on evidence of waiting updates, so it cannot hurt) */
     boolean updateBell() { return sp.getBoolean("updateBell", true); }
-    /** «أكمل المشاهدة» under the home screen's favourites (default on; it shows only once the home app may read the TV's Watch Next list). */
+    /** «أكمل المشاهدة» above the home screen's favourites (default on; it shows only once the home app may read the TV's Watch Next list). */
     boolean watchNext() { return sp.getBoolean("watchNext", true); }
     void setWatchNext(boolean v) { sp.edit().putBoolean("watchNext", v).apply(); }
+    String watchNextSize() {
+        String v = sp.getString("watchNextSize", "normal");
+        for (String[] size : WATCH_NEXT_SIZES) if (size[0].equals(v)) return v;
+        return "normal";
+    }
+    void setWatchNextSize(String v) { sp.edit().putString("watchNextSize", v).apply(); }
+    static String watchNextSizeLabel(String v) {
+        for (String[] size : WATCH_NEXT_SIZES) if (size[0].equals(v)) return size[1];
+        return WATCH_NEXT_SIZES[0][1];
+    }
     void setUpdateBell(boolean v) { sp.edit().putBoolean("updateBell", v).apply(); }
 
     List<String> teamIds() {
