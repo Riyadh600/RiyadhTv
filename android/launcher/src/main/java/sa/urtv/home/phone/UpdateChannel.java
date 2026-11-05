@@ -21,6 +21,7 @@ final class UpdateChannel {
         } catch (RuntimeException ignored) {
             // the screensaver is missing or signed with another key: the latest
         }
-        return "latest";
+        // A fresh test install has no saved channel yet; don't send it to the stable release it was not built from.
+        return "next".equals(BuildConfig.BRANCH) ? "next" : "latest";
     }
 }

@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
  * Android side: where they are kept (their own preferences file), the keypad, and a worker thread for the slow PIN check so the
  * screen, and the adhan on top of it, never wait for it.
  *
- * A family lock on what the UrTV home screen opens. It does not lock the TV: its own settings, the Play Store opened another way, the
+ * A family lock on what the RiyTv home screen opens. It does not lock the TV: its own settings, the Play Store opened another way, the
  * remote's assistant button, ADB and another launcher all go around it.
  */
 final class Parental {

@@ -2,6 +2,7 @@ package sa.urtv.home;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -26,6 +27,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -101,6 +103,7 @@ public class MainActivity extends Activity {
     private LinearLayout grid;
     private View glow;
     private ImageView wallBack, wallFront;
+    private ValueAnimator wallpaperMotion;
     private View gridShade;
     private String[] wallpapers = new String[0];
     private int wallIndex = -1;
@@ -114,9 +117,14 @@ public class MainActivity extends Activity {
     private GradientDrawable dockBand;
     private final List<TextView> gridLabels = new ArrayList<>();
     private String lookNow = GlassStyle.LOOKS[0];   // «المظهر ← الشكل» as the minute tick last read it (the glass of the home's own pieces)
+    private String homeThemeNow = "gold";
     private boolean lightNow;   // the look on screen now: dark until a light one is asked for
     private Pill inputsPill;        // «المصادر», for the phone remote's request
     private Pill tilawahPill;       // «تلاوة وأذان»: in the row only while the setting shows it (applyListenPill)
+    private Pill livePill;          // user-managed YouTube live channels
+    private Pill updatePill;        // on-demand check of RiyTv's own signed update
+    private boolean homeUpdateInstalling, homeUpdateConfirmShown;
+    private String pendingHomeUpdateMessage;
     private LinearLayout pillRow;    // the top row of pills
     // [updates bell] «جرس التحديثات»: in the row only on evidence of waiting Play Store updates (applyUpdateBell)
     private Pill bellPill;
@@ -184,6 +192,8 @@ public class MainActivity extends Activity {
                 View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         setContentView(buildUi());
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7304);
         // started by the screensaver's «الأذان» row; not again after a restore (the system hands back the same intent)
         if (b == null && (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
             openRequested(getIntent());
@@ -210,6 +220,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         resumed = true;
+        HomePresence.setActive(this, true);
         TypeService.homeFront(true);   // the Settings key is ours here (RemoteKeys): the service stops asking for keys
         A11yHeal.onStart(this);   // once per process: our accessibility service listed but not bound after an update (see A11yHeal)
         Parental.SESSION.clear();   // the home screen is in front again: an app opened with the PIN asks again next time
@@ -221,6 +232,11 @@ public class MainActivity extends Activity {
         tf.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
         registerReceiver(tick, tf);
         updateClock();
+        if (pendingHomeUpdateMessage != null) {
+            String message = pendingHomeUpdateMessage;
+            pendingHomeUpdateMessage = null;
+            handler.post(() -> updateMessage(message));
+        }
         updateNowPlaying();
         homeCard.refresh();
         readAnimationScale();
@@ -242,18 +258,22 @@ public class MainActivity extends Activity {
             scheduleWallpaper(WALLPAPER_INTERVAL_MS - (SystemClock.elapsedRealtime() - wallChangedAt));
             checkOwnChanged();   // the owner added or removed photos while another app was in front
         }
+        updateWallpaperMotion();
+        handler.postDelayed(() -> { if (resumed) updateWallpaperMotion(); }, ConfigSnapshot.SHARE_MS + 50L);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         resumed = false;   // a slow photo check that answers now must not start the 10-minute rotation again
+        HomePresence.setActive(this, false);
         TypeService.homeFront(false);   // another app is coming to the front: the service answers the Settings key there (SettingsKey)
         remoteKeys.reset();   // a shortcut key opened an app: its release went there, not here
         PinPrompt.dismiss(this);
         if (edit != null) leaveEdit();   // another screen came up: what was arranged is saved
         if (appsEdit != null) leaveAppsEdit();   // the same for «تعديل التطبيقات»
         handler.removeCallbacks(rotateWallpaper);
+        stopWallpaperMotion();
         unregisterReceiver(tick);
         if (inputsPopup != null) inputsPopup.dismiss();
         if (control != null) control.dismiss();   // its speed test stops with it
@@ -374,9 +394,9 @@ public class MainActivity extends Activity {
         int screenH = getResources().getDisplayMetrics().heightPixels;
         content.addView(hero, new LinearLayout.LayoutParams(-1, screenH));
 
-        hero.addView(buildHeader(), lp(-1, -2, Gravity.TOP, dp(48), dp(36), dp(48), 0));
+        hero.addView(buildHeader(), lp(-1, -2, Gravity.TOP, dp(26), dp(24), dp(26), 0));
         // optional card under the pills, same size as beside the screensaver's clock
-        homeCard = new HomeCard(this, hero, lp(dp(461), dp(250), Gravity.LEFT | Gravity.TOP, dp(48), dp(84), 0, 0), this::homeCardBox, new HomeCard.Live() {
+        homeCard = new HomeCard(this, hero, lp(dp(461), dp(250), Gravity.LEFT | Gravity.TOP, dp(26), dp(72), 0, 0), this::homeCardBox, new HomeCard.Live() {
             @Override public void focus(View target, boolean has) {   // «المهام» on the card takes the focus like a pill
                 if (has) { lastFocusedId = target.getId(); glideTo(0); fadeGlow(1f); }
             }
@@ -390,25 +410,26 @@ public class MainActivity extends Activity {
         bottom.setOrientation(LinearLayout.VERTICAL);
         bottom.setClipChildren(false);
         bottom.setClipToPadding(false);
-        hero.addView(bottom, lp(-1, -2, Gravity.BOTTOM, dp(48), 0, dp(48), dp(30)));
+        hero.addView(bottom, lp(-1, -2, Gravity.BOTTOM, dp(26), 0, dp(26), dp(12)));
         bottomBlock = bottom;
 
         title = text(34, "sans-serif-light", Color.WHITE);
+        title.setVisibility(View.GONE);   // independently controlled app and episode names
         title.setShadowLayer(dp(18), 0, 0, 0x66000000);
         title.setSingleLine(true);
         bottom.addView(title, new LinearLayout.LayoutParams(-2, -2));
-        ((LinearLayout.LayoutParams) title.getLayoutParams()).setMargins(dp(8), 0, 0, dp(14));
+        ((LinearLayout.LayoutParams) title.getLayoutParams()).setMargins(0, 0, 0, 0);
 
         dockRow = new LinearLayout(this);
         dockRow.setOrientation(LinearLayout.HORIZONTAL);
         dockRow.setGravity(Gravity.CENTER);
         dockRow.setClipChildren(false);
         dockRow.setClipToPadding(false);
-        dockRow.setPadding(dp(20), dp(22), dp(20), dp(22));
+        dockRow.setPadding(dp(10), dp(9), dp(10), dp(9));
         GradientDrawable band = dockBand = new GradientDrawable();
         band.setCornerRadius(dp(26));
-        band.setColor(0x1FFFFFFF);
-        band.setStroke(dp(1), 0x14FFFFFF);
+        band.setColor(0x12FFFFFF);
+        band.setStroke(dp(1), 0x0CFFFFFF);
         dockRow.setBackground(band);
 
         // «أكمل المشاهدة»: larger cards above the favourites, in the first screen with the clock and the photo.
@@ -416,20 +437,20 @@ public class MainActivity extends Activity {
         tvRowsBox.setOrientation(LinearLayout.VERTICAL);
         tvRowsBox.setClipChildren(false);
         tvRowsBox.setClipToPadding(false);
-        tvRowsBox.setPadding(dp(20), 0, dp(20), 0);
+        tvRowsBox.setPadding(dp(10), 0, dp(10), 0);
         bottom.addView(tvRowsBox, new LinearLayout.LayoutParams(-1, -2));
         bottom.addView(dockRow, new LinearLayout.LayoutParams(-1, -2));
 
         appsLabel = text(11, "sans-serif-medium", 0x99FFFFFF);
         appsLabel.setText("كل التطبيقات");
         appsLabel.setTextColor(GOLD);
-        content.addView(appsLabel, llp(-2, -2, dp(68), dp(8), dp(68), dp(18)));   // inset like the grid on both sides: in RTL it starts over the first tile
+        content.addView(appsLabel, llp(-2, -2, dp(28), dp(8), dp(28), dp(12)));
 
         grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
         grid.setClipChildren(false);
         grid.setClipToPadding(false);
-        content.addView(grid, llp(-1, -2, dp(68), 0, dp(68), dp(160)));
+        content.addView(grid, llp(-1, -2, dp(28), 0, dp(28), dp(36)));
         return root;
     }
 
@@ -505,21 +526,28 @@ public class MainActivity extends Activity {
         // the «تلاوة وأذان» pill: the Quran, the radio and the adhan are part of this app, so it opens them right here
         Pill tilawah = pill("تلاوة وأذان", R.drawable.ic_listen);
         tilawah.setOnClickListener(v -> launchGuarded(ParentalPolicy.PILL_LISTEN, new Intent(this, sa.urtv.home.tilawah.MainActivity.class), "تلاوة وأذان"));
+        livePill = pill("بث مباشر", R.drawable.ic_play);
+        livePill.setOnClickListener(v -> guarded(ParentalPolicy.PILL_LIVE, null, "بث مباشر", () -> startActivity(new Intent(this, LiveActivity.class))));
         // ---- «مركز التحكم» (ControlCenter): the sleep timer, the screensaver, the network and the TV's settings pills went into its panel
         control = new ControlCenter(this, controlHost());
         centerPill = pill(ControlText.NAME, R.drawable.ic_center);
         centerPill.setOnClickListener(v -> guarded(ParentalPolicy.PILL_CENTER, null, ControlText.NAME, () -> control.open(v)));
         // ---- end «مركز التحكم»
+        updatePill = pill("تحديث تلفزيوني", R.drawable.ic_sync);
+        updatePill.setOnClickListener(v -> guarded(ParentalPolicy.MENU_UPDATE, null, "تحديث تلفزيوني", this::checkUpdateFromHome));
         List<Pill> row = new ArrayList<>(Arrays.asList(inputs));
         if (isInstalled(SAVER_PKG)) row.add(tasks);
-        if (centerWanted()) row.add(centerPill);
         tilawahPill = tilawah;
         pillRow = right;
         // [updates bell] built here, put in the row by applyUpdateBell only while it has a reason to be there
         bellPill = pill("تحديثات التطبيقات", R.drawable.ic_bell);
         bellPill.setOnClickListener(v -> guarded(ParentalPolicy.PILL_UPDATES, UpdatesBell.PLAY_STORE, "متجر Play", this::openUpdates));
         // [/updates bell]
-        if (listenPillWanted(ConfigSnapshot.read(this).listenPillOn)) row.add(tilawah);   // «زر تلاوة وأذان»: hidden in the screensaver's settings, it is simply not in the row
+        ConfigSnapshot initialConfig = ConfigSnapshot.read(this);
+        if (centerWanted()) row.add(centerPill);
+        if (initialConfig.livePillOn()) row.add(livePill);
+        if (listenPillWanted(initialConfig.listenPillOn)) row.add(tilawah);
+        row.add(updatePill); // final shortcut, after Sources and the other top-row icons
         for (Pill p : row) {
             right.addView(p, llp(-2, dp(Pill.HEIGHT), dp(10), 0, 0, 0));
             pills.add(p);
@@ -666,7 +694,8 @@ public class MainActivity extends Activity {
         boolean want = centerWanted(), has = centerPill.getParent() == pillRow;
         if (want == has) return;
         if (want) {
-            int at = pills.contains(tilawahPill) ? pills.indexOf(tilawahPill) : pills.size();
+            int at = pills.contains(livePill) ? pills.indexOf(livePill)
+                    : pills.contains(tilawahPill) ? pills.indexOf(tilawahPill) : pills.size();
             pills.add(at, centerPill);
             pillRow.addView(centerPill, at + 1, llp(-2, dp(Pill.HEIGHT), dp(10), 0, 0, 0));   // child 0 is «يُتلى الآن»
         } else {
@@ -675,6 +704,25 @@ public class MainActivity extends Activity {
             int at = pills.indexOf(centerPill);
             pills.remove(centerPill);
             pillRow.removeView(centerPill);
+            if (hadFocus && !pills.isEmpty()) pills.get(Math.max(0, Math.min(at, pills.size()) - 1)).requestFocus();
+        }
+        wireFocus();
+    }
+
+    private void applyLivePill(boolean setting) {
+        if (livePill == null || pillRow == null) return;
+        boolean want = setting && !Parental.state(this).kids, has = livePill.getParent() == pillRow;
+        if (want == has) return;
+        if (want) {
+            int at = pills.contains(centerPill) ? pills.indexOf(centerPill) + 1
+                    : pills.contains(tilawahPill) ? pills.indexOf(tilawahPill) : pills.size();
+            pills.add(at, livePill);
+            pillRow.addView(livePill, at + 1, llp(-2, dp(Pill.HEIGHT), dp(10), 0, 0, 0));
+        } else {
+            boolean hadFocus = livePill.hasFocus();
+            int at = pills.indexOf(livePill);
+            pills.remove(livePill);
+            pillRow.removeView(livePill);
             if (hadFocus && !pills.isEmpty()) pills.get(Math.max(0, Math.min(at, pills.size()) - 1)).requestFocus();
         }
         wireFocus();
@@ -840,7 +888,7 @@ public class MainActivity extends Activity {
                 row = new LinearLayout(this);
                 row.setClipChildren(false);
                 row.setClipToPadding(false);
-                grid.addView(row, llp(-1, -2, 0, 0, 0, dp(26)));
+                grid.addView(row, llp(-1, -2, 0, 0, 0, dp(12)));
             } else if (row == null) {
                 row = (LinearLayout) grid.getChildAt(grid.getChildCount() - 1);
             }
@@ -940,30 +988,33 @@ public class MainActivity extends Activity {
 
         TextView label = text(11, "sans-serif-medium", Color.WHITE);
         label.setText(app.label);
+        boolean appNamesOn = ConfigSnapshot.read(this).homeAppNames();
+        label.setVisibility(appNamesOn ? View.VISIBLE : View.GONE);
         label.setSingleLine(true);
         label.setGravity(Gravity.CENTER);
-        label.setAlpha(0f);
-        if (!inDock) {
-            box.addView(label, llp(-1, -2, 0, dp(10), 0, 0));
-            gridLabels.add(label);
-            if (lightNow) label.setTextColor(Look.LIGHT_LOOK.ink);
-        }
+        label.setAlpha(appNamesOn ? 1f : 0f);
+        box.addView(label, llp(-1, -2, 0, dp(5), 0, 0));
+        gridLabels.add(label);
+        if (lightNow) label.setTextColor(Look.LIGHT_LOOK.ink);
 
         card.setOnClickListener(v -> guarded(inDock ? ParentalPolicy.TILE : ParentalPolicy.GRID, app.pkg, app.label, () -> launch(new Intent(Intent.ACTION_MAIN)
                 .addCategory(app.category)
                 .setComponent(app.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED))));
+        card.setContentDescription(app.label);
         card.setOnFocusChangeListener((v, has) -> {
             float s = has ? (inDock ? 1.12f : 1.1f) : 1f;
             scaleTo(v, s);   // a spring: a held arrow keeps its speed from card to card
             v.animate().translationZ(has ? dp(GlowLook.LIFT_DP) : 0).setInterpolator(new DecelerateInterpolator()).setDuration(has ? 320 : 200).start();
             shine.animate().alpha(has ? 1f : 0f).setDuration(160).start();
-            label.animate().alpha(has ? 1f : 0f).translationY(has ? dp(4) : 0).setDuration(200).start();
+            label.animate().alpha(appNamesOn || has ? 1f : 0f).translationY(has ? dp(4) : 0).setDuration(200).start();
             if (!has) return;
             lastFocusedId = v.getId();
             if (inDock) {
                 title.setText(app.label);
-                title.animate().alpha(1f).setDuration(200).start();
+                boolean showName = ConfigSnapshot.read(MainActivity.this).homeAppNames();
+                title.setVisibility(showName ? View.VISIBLE : View.GONE);
+                title.animate().alpha(showName ? 1f : 0f).setDuration(200).start();
                 animateGlow(app.color);
                 fadeGlow(1f);
                 glideTo(0);
@@ -1283,10 +1334,11 @@ public class MainActivity extends Activity {
         bg.setColor(0xFF1C1C1E);
         card.setBackground(bg);
         TextView plain = text(13, "sans-serif-medium", Color.WHITE);   // the title on the plain card, until (unless) the picture comes
-        plain.setText(it.title);
+        plain.setText(ConfigSnapshot.read(this).watchEpisodeNames() ? it.title : "");
         plain.setGravity(Gravity.CENTER);
         plain.setPadding(dp(12), dp(8), dp(12), dp(8));
         card.addView(plain, new FrameLayout.LayoutParams(-1, -1));
+        card.setTag(it);
         ImageView img = new ImageView(this);
         img.setScaleType(ImageView.ScaleType.CENTER_CROP);
         img.setVisibility(View.GONE);
@@ -1321,8 +1373,9 @@ public class MainActivity extends Activity {
             shine.animate().alpha(has ? 1f : 0f).setDuration(160).start();
             if (!has) return;
             lastFocusedId = v.getId();
-            title.setText(it.meta.isEmpty() ? it.title : it.title + "  ·  " + it.meta);
-            title.animate().alpha(1f).setDuration(200).start();
+            boolean showName = ConfigSnapshot.read(MainActivity.this).watchEpisodeNames();
+            title.setText(showName ? it.title : "");
+            title.setVisibility(showName ? View.VISIBLE : View.GONE);
             fadeGlow(1f);
             glideTo(0);   // the first screen stays: the clock and the photo
         });
@@ -2045,46 +2098,56 @@ public class MainActivity extends Activity {
         List<String> labels = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
         boolean kids = Parental.state(this).kids;   // kids mode edits nothing (kidsNoEdit)
-        if (inDock && !kids) {
+        if (!kids) {
             labels.add("تعديل المفضلة");
-            actions.add(() -> beginEdit(pkg));
+            actions.add(() -> {
+                if (inDock) beginEdit(pkg);
+                else if (dock.size() < MAX_DOCK) { dock.add(pkg); saveDock(dock, pkg); }
+                else Toast.makeText(this, "المفضلة ممتلئة", Toast.LENGTH_SHORT).show();
+            });
         }
-        if (!inDock && !kids) {
-            labels.add("تعديل التطبيقات");
-            actions.add(() -> beginAppsEdit(pkg));
-        }
-        labels.add("تحديث تلفزيوني…");
-        actions.add(() -> launchGuarded(ParentalPolicy.MENU_UPDATE, new Intent(this, UpdateActivity.class), "تحديث تلفزيوني"));
-        if (inDock) {
-            if (dock.size() > MIN_DOCK) {
-                labels.add("إزالة من المفضلة");
-                actions.add(() -> { dock.remove(pkg); saveDock(dock, dock.get(Math.max(0, i - 1))); });
-            } else {
-                labels.add("المفضلة لا تقل عن " + arabicDigits(String.valueOf(MIN_DOCK)));
-                actions.add(() -> { });
-            }
-        } else if (dock.size() < MAX_DOCK) {
-            labels.add("إضافة إلى المفضلة");
-            actions.add(() -> { dock.add(pkg); saveDock(dock, pkg); });
-        } else {
-            labels.add("المفضلة ممتلئة (" + MAX_DOCK + ")");
-            actions.add(() -> { });
-        }
-        labels.add("إعادة المفضلة الافتراضية");
+        labels.add("إزالة من المفضلة");
         actions.add(() -> {
-            prefs().edit().remove("dock").apply();
-            dockApps = getResources().getStringArray(R.array.dock_apps);
-            buildApps();
+            if (!inDock) { Toast.makeText(this, "التطبيق غير موجود في المفضلة", Toast.LENGTH_SHORT).show(); return; }
+            if (dock.size() <= MIN_DOCK) { Toast.makeText(this, "المفضلة لا تقل عن " + arabicDigits(String.valueOf(MIN_DOCK)), Toast.LENGTH_SHORT).show(); return; }
+            dock.remove(pkg);
+            saveDock(dock, dock.get(Math.max(0, i - 1)));
         });
-        if (listenPillHidden()) {   // the button is hidden: the player (and the adhan's settings in it) opens from here, behind the same lock
-            labels.add("تلاوة وأذان…");
-            actions.add(() -> launchGuarded(ParentalPolicy.PILL_LISTEN, new Intent(this, sa.urtv.home.tilawah.MainActivity.class), "تلاوة وأذان"));
-            labels.add("إعدادات الأذان…");   // the same screen, on its «الأذان» tab: on or off, the voices, short, any key, the volume
-            actions.add(() -> launchGuarded(ParentalPolicy.PILL_LISTEN, adhanSettingsIntent(), "إعدادات الأذان"));
-        }
-        labels.add("الرقابة الأبوية…");
-        actions.add(() -> launchGuarded(ParentalPolicy.PARENTAL_SCREEN, new Intent(this, ParentalActivity.class), "الرقابة الأبوية"));
+        labels.add("تعديل اسم التطبيق");
+        actions.add(() -> editAppName(pkg));
+        labels.add("إلغاء التثبيت");
+        actions.add(() -> uninstallApp(pkg));
         showMenu(anchor, labels, actions);
+    }
+
+    private void editAppName(String pkg) {
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setSingleLine(true);
+        input.setHint("اكتب الاسم بالعربية");
+        input.setText(AppNames.given(this).get(pkg));
+        input.setSelection(input.length());
+        LinearLayout box = new LinearLayout(this);
+        box.setPadding(dp(18), dp(8), dp(18), dp(4));
+        box.addView(input, new LinearLayout.LayoutParams(-1, -2));
+        new android.app.AlertDialog.Builder(this).setTitle("تعديل اسم التطبيق").setView(box)
+            .setPositiveButton("حفظ", (d, w) -> {
+                String value = input.getText().toString().trim();
+                Map<String, String> names = AppNames.given(this);
+                if (value.isEmpty()) names.remove(pkg);
+                else if (AppNames.valid(value)) names.put(pkg, value);
+                else { Toast.makeText(this, "اكتب اسماً عربياً حتى ٣٠ حرفاً", Toast.LENGTH_SHORT).show(); return; }
+                AppNames.save(this, names);
+                buildApps();
+            }).setNegativeButton("إلغاء", null).show();
+    }
+
+    private void uninstallApp(String pkg) {
+        try {
+            Intent i = new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + pkg));
+            startActivity(i);   // Android presents its own confirmation screen.
+        } catch (RuntimeException e) {
+            Toast.makeText(this, "تعذّر فتح شاشة إزالة التطبيق", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /** Small focusable popup in the same style as the Inputs menu. */
@@ -2166,7 +2229,7 @@ public class MainActivity extends Activity {
         for (int m : SleepTimer.MINUTES) rows.add(inputRow(arabicDigits(String.valueOf(m)) + " دقيقة", () -> SleepTimer.start(this, m)));
         if (SleepTimer.minutesLeft(this) > 0) rows.add(inputRow("إلغاء", () -> SleepTimer.start(this, 0)));
         if (!SleepService.enabled()) {   // without it the end only stops the sound and brings the screensaver: say so, and where to turn it on
-            rows.add(inputRow("لإطفاء الشاشة: فعّل «تلفزيونك: إطفاء الشاشة»", () -> launchGuarded(ParentalPolicy.SLEEP_ACCESSIBILITY, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), "إعدادات التلفزيون")));
+            rows.add(inputRow("لإطفاء الشاشة: فعّل «RiyTv: إطفاء الشاشة»", () -> launchGuarded(ParentalPolicy.SLEEP_ACCESSIBILITY, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), "إعدادات التلفزيون")));
         }
         for (TextView r : rows) {
             r.setOnClickListener(v -> { pw.dismiss(); ((Runnable) v.getTag()).run(); });
@@ -2190,6 +2253,73 @@ public class MainActivity extends Activity {
     private void updateSleepPill() {
         if (centerPill == null) return;
         centerPill.setAccent(SleepTimer.minutesLeft(this) > 0);   // gold while the timer runs; the minutes are in the panel's tile
+    }
+
+    private void checkUpdateFromHome() {
+        if (sa.urtv.home.phone.PhoneUpdater.isBusy()) {
+            Toast.makeText(this, "فحص أو تثبيت التحديث جارٍ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        homeUpdateInstalling = false;
+        homeUpdateConfirmShown = false;
+        updatePill.setSpinning(true);
+        sa.urtv.home.phone.PhoneUpdater.setVisible(true);
+        sa.urtv.home.phone.PhoneUpdater.setListener(() -> runOnUiThread(this::showHomeUpdateState));
+        sa.urtv.home.phone.PhoneUpdater.reset();
+        sa.urtv.home.phone.PhoneUpdater.checkVersion(this);
+    }
+
+    private void showHomeUpdateState() {
+        Map<String, Object> state = sa.urtv.home.phone.PhoneUpdater.status();
+        String status = String.valueOf(state.get("status"));
+        if ("checking".equals(status) || "downloading".equals(status)) return;
+        if ("found".equals(status) && !homeUpdateInstalling) {
+            homeUpdateInstalling = true;
+            updatePill.setLabel("جارٍ تنزيل التحديث");
+            updateMessage("يتوفر تحديث جديد. جارٍ تنزيله والتحقق منه؛ سيطلب أندرويد تأكيدك قبل تثبيته.");
+            sa.urtv.home.phone.PhoneUpdater.install(this, false);
+            return;
+        }
+        if ("waiting_owner".equals(status)) {
+            updatePill.setSpinning(false);
+            updatePill.setLabel("أكد تثبيت التحديث");
+            if (!homeUpdateConfirmShown && sa.urtv.home.phone.PhoneUpdater.confirmWaiting())
+                homeUpdateConfirmShown = sa.urtv.home.phone.PhoneUpdater.showConfirm(this);
+            return;
+        }
+        if ("uptodate".equals(status)) {
+            finishHomeUpdateUi();
+            updateMessage("نسختك محدثة · " + sa.urtv.home.phone.PhoneUpdater.installedName(this));
+        } else if ("done".equals(status)) {
+            finishHomeUpdateUi();
+            updateMessage("اكتمل تحديث تطبيقات تلفزيون الرياض");
+        } else if ("error".equals(status)) {
+            finishHomeUpdateUi();
+            String reason = String.valueOf(state.get("reason"));
+            String why = String.valueOf(state.get("why"));
+            String message = "offline".equals(reason) ? sa.urtv.home.phone.UpdateText.OFFLINE
+                    : "need_permission".equals(reason) ? sa.urtv.home.phone.UpdateText.NEED_PERMISSION
+                    : sa.urtv.home.phone.UpdateText.failure(why);
+            updateMessage(message);
+        }
+    }
+
+    private void updateMessage(String message) {
+        if (!resumed || isFinishing() || isDestroyed()) { pendingHomeUpdateMessage = message; return; }
+        android.app.AlertDialog.Builder dialog = new android.app.AlertDialog.Builder(this).setTitle("تحديث تلفزيوني")
+            .setMessage(message);
+        if (sa.urtv.home.phone.UpdateText.NEED_PERMISSION.equals(message)) {
+            dialog.setPositiveButton("فتح الإذن", (d, w) -> sa.urtv.home.phone.PhoneUpdater.openPermissionScreen(this));
+            dialog.setNegativeButton("إلغاء", null);
+        } else dialog.setPositiveButton("حسنًا", null);
+        dialog.show();
+    }
+
+    private void finishHomeUpdateUi() {
+        updatePill.setSpinning(false);
+        updatePill.setLabel("تحديث تلفزيوني");
+        sa.urtv.home.phone.PhoneUpdater.setListener(null);
+        sa.urtv.home.phone.PhoneUpdater.setVisible(false);
     }
 
     private TextView inputRow(String label, Runnable action) {
@@ -2226,11 +2356,13 @@ public class MainActivity extends Activity {
     }
 
     /** The home in the light or the dark look; nothing is touched while the look stays the same. */
-    private void applyLook(boolean light) {
+    private void applyLook(boolean light, String theme) {
         GlassSource.setHomeLight(this, light);   // «تلقائي» on the other screens follows the home (kept only when it changes)
-        if (light == lightNow) return;
+        boolean same = light == lightNow && theme.equals(homeThemeNow);
+        if (same) return;
         lightNow = light;
-        Look.Palette p = Look.of(light);
+        homeThemeNow = theme;
+        Look.Palette p = HomeTheme.palette(theme, light);
         clock.setTextColor(p.text);
         title.setTextColor(p.ink);
         title.setShadowLayer(dp(18), 0, 0, p.titleShadow);
@@ -2245,11 +2377,35 @@ public class MainActivity extends Activity {
         dockBand.setStroke(dp(1), p.bandStroke);
     }
 
+    /** Apply the two independent name switches when settings change while the home activity stays alive. */
+    private void applyNameVisibility(ConfigSnapshot cfg) {
+        boolean apps = cfg.homeAppNames();
+        for (TextView label : gridLabels) {
+            label.setVisibility(apps ? View.VISIBLE : View.GONE);
+            label.setAlpha(apps ? 1f : 0f);
+        }
+        boolean episodes = cfg.watchEpisodeNames();
+        for (java.util.Map.Entry<TvRows.Item, TextView> e : tvPlain.entrySet())
+            e.getValue().setText(episodes ? e.getKey().title : "");
+        View focus = getCurrentFocus();
+        if (focus == null) return;
+        Object tag = focus.getTag();
+        if (tag instanceof App && dockCards.contains(focus)) {
+            title.setText(apps ? ((App) tag).label : "");
+            title.setVisibility(apps ? View.VISIBLE : View.GONE);
+        } else if (tag instanceof TvRows.Item && isInTvRows(focus)) {
+            title.setText(episodes ? ((TvRows.Item) tag).title : "");
+            title.setVisibility(episodes ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private void updateClock() {
         long ms = System.currentTimeMillis();
         String tvTz = java.util.TimeZone.getDefault().getID();
         // one read of the screensaver's settings (its ConfigProvider, same signing key) for the whole tick; null zone = it is missing: the TV's own
         ConfigSnapshot cfg = ConfigSnapshot.read(this);
+        applyNameVisibility(cfg);
+        applyNameVisibility(cfg);
         Digits.remember(this, cfg);   // a change of the setting reaches the next tick
         String[] zone = cfg.cityZone();
         String tz = zone == null ? tvTz : zone[1];
@@ -2257,7 +2413,7 @@ public class MainActivity extends Activity {
         int h = now.get(Calendar.HOUR_OF_DAY);
         greetingLine.update(h, cfg);
         lookNow = cfg.look();
-        applyLook(Look.light(cfg.appearance(), dayBySun(cfg), h * 60 + now.get(Calendar.MINUTE)));
+        applyLook(Look.light(cfg.appearance(), dayBySun(cfg), h * 60 + now.get(Calendar.MINUTE)), cfg.homeTheme());
         boolean h24 = cfg.clock24();   // «ساعة ٢٤»: off (12-hour with the ص or م) unless the owner turned it on
         clock.setText(ClockText.face(h, now.get(Calendar.MINUTE), h24, Digits.latin()));
         ampm.setText(ClockText.suffix(h, h24));
@@ -2293,6 +2449,7 @@ public class MainActivity extends Activity {
         date.setText(arabicDigits(hijri.isEmpty() ? greg : hijri + "  –  " + greg));
         updateAdhanBar(cfg);
         applyListenPill(cfg.listenPillOn);
+        applyLivePill(cfg.livePillOn());
         applyUpdateBell(cfg.updateBellOn);   // [updates bell]
         applyCenterPill();   // kids mode may have been turned on or off
         sa.urtv.home.tilawah.AdhanSync.onConfig(this, cfg.placeFragment(), cfg.placeTicket());   // «تعديل وقت الصلاة» changed on the TV: the alarm follows
@@ -2545,6 +2702,7 @@ public class MainActivity extends Activity {
 
     private void showWallpaper(Bitmap bm) {
         if (bm == null || isDestroyed()) return;
+        stopWallpaperMotion();
         // Swap roles: the old front becomes the back, the new photo fades in on top.
         final ImageView old = wallFront;
         wallFront = wallBack;
@@ -2559,7 +2717,38 @@ public class MainActivity extends Activity {
             // release the previous photo: the view this fade was above, not whichever is behind by now (a newer photo may have swapped them)
             if (old != wallFront && old != shown) old.setImageDrawable(null);
         }).start();
+        updateWallpaperMotion();
         firstWallpaper = false;
+    }
+
+    /** Follow the screensaver's single setting for the home and ambient photos. */
+    private boolean backgroundMotionEnabled() {
+        return ConfigSnapshot.read(this).homeMotion();
+    }
+
+    private void stopWallpaperMotion() {
+        if (wallpaperMotion != null) {
+            wallpaperMotion.cancel();
+            wallpaperMotion = null;
+        }
+        if (wallFront != null) { wallFront.setScaleX(1f); wallFront.setScaleY(1f); }
+    }
+
+    private void updateWallpaperMotion() {
+        stopWallpaperMotion();
+        if (!resumed || wallFront == null || wallFront.getDrawable() == null || !backgroundMotionEnabled()) return;
+        final ImageView target = wallFront;
+        wallpaperMotion = ValueAnimator.ofFloat(1f, 1.055f);
+        String speed = ConfigSnapshot.read(this).backgroundSpeed();
+        wallpaperMotion.setDuration("fast".equals(speed) ? 45000L : "normal".equals(speed) ? 90000L : 180000L);
+        wallpaperMotion.setRepeatCount(ValueAnimator.INFINITE);
+        wallpaperMotion.setRepeatMode(ValueAnimator.REVERSE);
+        wallpaperMotion.addUpdateListener(a -> {
+            float scale = (Float) a.getAnimatedValue();
+            target.setScaleX(scale);
+            target.setScaleY(scale);
+        });
+        wallpaperMotion.start();
     }
 
     private boolean firstWallpaper = true;
@@ -2725,7 +2914,7 @@ public class MainActivity extends Activity {
     private void openOurSettings(boolean orTvSettings) {
         Intent i = new Intent(Intent.ACTION_MAIN).setComponent(new ComponentName(SAVER_PKG, SAVER_PKG + ".SettingsActivity"));
         if (getPackageManager().resolveActivity(i, 0) != null) {
-            guarded(ParentalPolicy.OUR_SETTINGS, null, "إعدادات تلفزيونك", () -> launch(i));
+            guarded(ParentalPolicy.OUR_SETTINGS, null, "إعدادات تلفزيون الرياض", () -> launch(i));
         } else if (orTvSettings) {
             launchGuarded(ParentalPolicy.REMOTE_SETTINGS, new Intent(Settings.ACTION_SETTINGS), "إعدادات التلفزيون");
         }

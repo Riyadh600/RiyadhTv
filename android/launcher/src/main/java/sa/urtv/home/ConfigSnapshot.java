@@ -121,4 +121,26 @@ final class ConfigSnapshot {
     boolean clock24() { return fragment != null && (fragment.contains("&clock=24") || fragment.startsWith("clock=24")); }
 
     boolean latin() { return fragment != null && (fragment.contains("&digits=latin") || fragment.startsWith("digits=latin")); }
+
+    boolean homeMotion() { return fragment != null && (fragment.contains("&homemotion=1") || fragment.startsWith("homemotion=1")); }
+
+    boolean homeAppNames() { return fragment != null && (fragment.contains("&appnames=1") || fragment.startsWith("appnames=1")); }
+
+    boolean watchEpisodeNames() { return fragment != null && (fragment.contains("&episodenames=1") || fragment.startsWith("episodenames=1")); }
+
+    String backgroundSpeed() {
+        if (fragment == null) return "slow";
+        if (fragment.contains("&bgspeed=fast") || fragment.startsWith("bgspeed=fast")) return "fast";
+        if (fragment.contains("&bgspeed=normal") || fragment.startsWith("bgspeed=normal")) return "normal";
+        return "slow";
+    }
+
+    String homeTheme() {
+        if (fragment == null) return "gold";
+        for (String key : new String[] {"sea", "palm", "violet", "rose"})
+            if (fragment.contains("&hometheme=" + key) || fragment.startsWith("hometheme=" + key)) return key;
+        return "gold";
+    }
+
+    boolean livePillOn() { return fragment == null || (!fragment.contains("&livepill=0") && !fragment.startsWith("livepill=0")); }
 }

@@ -207,7 +207,7 @@ public class SettingsActivity extends Activity {
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(0, 0, 0, dp(14));
         TextView title = new TextView(this);
-        title.setText("تلفزيونك");
+        title.setText("تلفزيون الرياض");
         title.setTextColor(look.text);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 44);
         title.setTypeface(font("ThmanyahDisplay-Bold"));
@@ -251,9 +251,6 @@ public class SettingsActivity extends Activity {
             new Runnable() { public void run() { pickMany("events", "رياضات أخرى", Prefs.EVENTS, "بدون اختيار = بدون"); } });
 
         header("العرض");
-        noConv = true;
-        row("الأرقام", Prefs.digitsLabel(prefs.digits()), R.drawable.ic_language,
-            new Runnable() { public void run() { pickDigits(); } });
         noConv = false;
         row("تنبيه قبل الأذان", prefs.adhanBar() ? "يعمل · شريط في أعلى الشاشة آخر ١٠ دقائق، ثم حتى الإقامة" : "متوقف", R.drawable.ic_eye,
             new Runnable() { public void run() { prefs.setAdhanBar(!prefs.adhanBar()); render(); } });
@@ -297,10 +294,24 @@ public class SettingsActivity extends Activity {
         row("شكل البطاقة", Prefs.cardStyleLabel(prefs.cardStyle()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickCardStyle(); } });
 
-        header("الشاشة الرئيسية (تلفزيونك)");
+        header("الشاشة الرئيسية (تلفزيون الرياض)");
         // «المظهر», the first row: «الشكل» (glass, graphite, navy, clean) and «الإضاءة» (dark, light, auto), each picked with a live preview
         row("المظهر", Prefs.lookLabel(prefs.look()) + " · " + Prefs.appearanceLabel(prefs.appearance()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickLook(); } });
+        noConv = true;
+        row("الأرقام", Prefs.digitsLabel(prefs.digits()), R.drawable.ic_language,
+            new Runnable() { public void run() { pickDigits(); } });
+        noConv = false;
+        row("أسماء التطبيقات", prefs.homeAppNames() ? "ظاهرة" : "مخفية", R.drawable.ic_eye,
+            new Runnable() { public void run() { prefs.setHomeAppNames(!prefs.homeAppNames()); render(); } });
+        row("أسماء حلقات أكمل المشاهدة", prefs.watchEpisodeNames() ? "ظاهرة" : "مخفية", R.drawable.ic_eye,
+            new Runnable() { public void run() { prefs.setWatchEpisodeNames(!prefs.watchEpisodeNames()); render(); } });
+        row("حركة خلفية الشاشة الرئيسية", prefs.homeMotion() ? "تعمل" : "متوقفة", R.drawable.ic_screensaver,
+            new Runnable() { public void run() { prefs.setHomeMotion(!prefs.homeMotion()); render(); } });
+        row("سرعة حركة الخلفية", backgroundSpeedLabel(prefs.backgroundSpeed()), R.drawable.ic_sync,
+            new Runnable() { public void run() { pickBackgroundSpeed(); } });
+        row("ثيم الشاشة الرئيسية", Prefs.homeThemeLabel(prefs.homeTheme()), R.drawable.ic_eye,
+            new Runnable() { public void run() { pickHomeTheme(); } });
         // up to three cards left of the clock; each place takes any card, or «بدون» (the ones after it move up)
         for (int k = 0; k < Prefs.HOME_CARDS; k++) {
             final int place = k;
@@ -316,6 +327,10 @@ public class SettingsActivity extends Activity {
         // hiding removes only the button; the help line says where the screen opens from then
         row("زر تلاوة وأذان", prefs.listenPill() ? "ظاهر" : "مخفي  •  الأذان والتلاوة تعمل، وتفتح الشاشة من قائمة التطبيق (اختيار مطوّلة) أو من بطاقة «يُتلى الآن»", R.drawable.ic_eye,
             new Runnable() { public void run() { prefs.setListenPill(!prefs.listenPill()); render(); } });
+        row("زر البث المباشر", prefs.livePill() ? "ظاهر · قنوات يوتيوب" : "مخفي", R.drawable.ic_play,
+            new Runnable() { public void run() { prefs.setLivePill(!prefs.livePill()); render(); } });
+        row("قنوات البث المباشر", "إضافة رابط يوتيوب أو حذف قناة", R.drawable.ic_settings,
+            new Runnable() { public void run() { openLiveChannels(); } });
         // the bell shows only while the Play Store has updates waiting (the home screen asks on return, at most every 6 hours)
         row("جرس التحديثات", prefs.updateBell() ? "ظاهر عند وجود تحديثات للتطبيقات" : "مخفي", R.drawable.ic_eye,
             new Runnable() { public void run() { prefs.setUpdateBell(!prefs.updateBell()); render(); } });
@@ -364,11 +379,14 @@ public class SettingsActivity extends Activity {
             R.drawable.ic_star, new Runnable() { public void run() { askStocks(); } });
         }
 
-        header("التوقيت");
+        header("الخلفية");
+        row("حركة خلفية شاشة التوقف", "تعمل تلقائياً", R.drawable.ic_screensaver, null);
         row("تبديل الصورة كل", minutesLabel(Integer.parseInt(prefs.photoMinutes())), R.drawable.ic_sync,
             new Runnable() { public void run() { pickPhotoMinutes(); } });
         row("صوري (" + arabicNum(Own.count(this)) + "/" + arabicNum(Own.MAX) + ")", ownLabel(), R.drawable.ic_eye,
             new Runnable() { public void run() { pickOwn(); } });
+
+        header("التوقيت");
         row("بدء شاشة التوقف بعد", idleLabel(), R.drawable.ic_screensaver,
             new Runnable() { public void run() { pickIdle(); } });
 
@@ -847,9 +865,9 @@ public class SettingsActivity extends Activity {
             boolean installed = true;
             try { getPackageManager().getPackageInfo("sa.urtv.home", 0); }
             catch (android.content.pm.PackageManager.NameNotFoundException gone) { installed = false; }
-            toast(installed ? "ما قدرنا نفتح حماية العائلة: حدّث الواجهة الرئيسية «تلفزيونك»" : "ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast(installed ? "ما قدرنا نفتح حماية العائلة: حدّث الواجهة الرئيسية «تلفزيون الرياض»" : "ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -858,7 +876,7 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.DockActivity"));
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -893,7 +911,7 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.WatchNextActivity"));
         } catch (RuntimeException e) {   // not installed, or an older launcher without the screen
-            toast("حدّث الواجهة الرئيسية «تلفزيونك» أو ثبّتها أولاً");
+            toast("حدّث الواجهة الرئيسية «تلفزيون الرياض» أو ثبّتها أولاً");
         }
     }
 
@@ -902,8 +920,13 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.InputNamesActivity"));
         } catch (RuntimeException e) {   // not installed, or an older launcher without the screen
-            toast("حدّث الواجهة الرئيسية «تلفزيونك» أو ثبّتها أولاً");
+            toast("حدّث الواجهة الرئيسية «تلفزيون الرياض» أو ثبّتها أولاً");
         }
+    }
+
+    private void openLiveChannels() {
+        try { startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.LiveActivity")); }
+        catch (RuntimeException e) { toast("حدّث الواجهة الرئيسية «تلفزيون الرياض» أولاً"); }
     }
 
     /** The adhan's settings are the launcher's: its home opens them (behind the family lock) when asked with open=adhan. */
@@ -911,7 +934,7 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.MainActivity").putExtra("open", "adhan"));
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -921,7 +944,7 @@ public class SettingsActivity extends Activity {
             startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setClassName("sa.urtv.home", "sa.urtv.home.MainActivity")
                 .putExtra("edit_favourites", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -937,7 +960,7 @@ public class SettingsActivity extends Activity {
             startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setClassName("sa.urtv.home", "sa.urtv.home.MainActivity")
                 .putExtra(reset ? "reset_apps_order" : "edit_apps", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -946,9 +969,9 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.UpdateActivity"));
         } catch (SecurityException e) {   // the home is newer than this app (or the other way round): it asks for a permission this one does not have yet
-            toast("حدّث التطبيقين «شاشة تلفزيونك» و«تلفزيونك»: واحد منهم أقدم من الثاني");
+            toast("حدّث التطبيقين «تلفزيون الرياض» معاً: أحدهما أقدم من الآخر");
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -957,7 +980,7 @@ public class SettingsActivity extends Activity {
         try {
             startActivity(new Intent().setClassName("sa.urtv.home", "sa.urtv.home.PhoneActivity"));
         } catch (RuntimeException e) {
-            toast("ثبّت الواجهة الرئيسية «تلفزيونك» أولاً");
+            toast("ثبّت الواجهة الرئيسية «تلفزيون الرياض» أولاً");
         }
     }
 
@@ -1327,6 +1350,32 @@ public class SettingsActivity extends Activity {
         }
         new Dlg(this).setTitle("تبديل الصورة كل")
             .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setPhotoMinutes(Prefs.PHOTO_MINUTES[i]); d.dismiss(); render(); })
+            .show();
+    }
+
+    private static String backgroundSpeedLabel(String value) {
+        return "fast".equals(value) ? "سريعة" : "normal".equals(value) ? "متوسطة" : "بطيئة";
+    }
+
+    private void pickBackgroundSpeed() {
+        final String[] values = {"slow", "normal", "fast"};
+        String[] labels = {"بطيئة", "متوسطة", "سريعة"};
+        int selected = "fast".equals(prefs.backgroundSpeed()) ? 2 : "normal".equals(prefs.backgroundSpeed()) ? 1 : 0;
+        new Dlg(this).setTitle("سرعة حركة الخلفية")
+            .setSingleChoiceItems(labels, selected, (d, i) -> { prefs.setBackgroundSpeed(values[i]); d.dismiss(); render(); })
+            .show();
+    }
+
+    private void pickHomeTheme() {
+        String[] values = new String[Prefs.HOME_THEMES.length], labels = new String[values.length];
+        int selected = 0;
+        for (int i = 0; i < values.length; i++) {
+            values[i] = Prefs.HOME_THEMES[i][0];
+            labels[i] = Prefs.HOME_THEMES[i][1];
+            if (values[i].equals(prefs.homeTheme())) selected = i;
+        }
+        new Dlg(this).setTitle("ثيم الشاشة الرئيسية")
+            .setSingleChoiceItems(labels, selected, (d, i) -> { prefs.setHomeTheme(values[i]); d.dismiss(); render(); })
             .show();
     }
 

@@ -68,7 +68,7 @@ final class SetupEngine {
     static List<String> plan() {
         List<String> p = new ArrayList<>();
         p.add("نفحص أن الجهاز تلفزيون أندرويد، وأن التلفزيون يجاوب على أسئلتنا.");
-        p.add("نعطي تطبيق تلفزيونك الأذونات اللازمة (الموقع، المنبّهات الدقيقة للأذان، تثبيت التحديثات).");
+        p.add("نعطي تطبيق تلفزيون الرياض الأذونات اللازمة (الموقع، المنبّهات الدقيقة للأذان، تثبيت التحديثات).");
         p.add("نوقف " + safeCount() + " تطبيقاً من قائمة التطبيقات الآمنة (إعلانات وتتبّع وعروض)، ونسجّل ما أوقفناه لنرجعه بزر واحد. ما نلمس تطبيقاً كان موقوفاً من قبل، ولا النظام، ولا ما تحتاجه (البث، الإدخال، المتجر).");
         p.add("نفعّل شاشة التوقف لو كانت مثبّتة ونسخة WebView تكفي، وإلا نتركها ونقول لك.");
         p.add("نجعل تلفزيونك الشاشة الرئيسية. تنتظر الشاشة 5 دقائق: إن ما اشتغلت ترجع الشاشة الأصلية وحدها.");
@@ -217,7 +217,7 @@ final class SetupEngine {
             if (!modeOf(text("appops get " + SELF + " REQUEST_INSTALL_PACKAGES")).equals("allow")) bad.add("تثبيت التحديثات");
         }
         if (!bad.isEmpty()) return failed("لم يقبل التلفزيون بعض الأذونات (" + String.join("، ", bad) + "). أكمل الإعداد؛ تلك الميزات قد لا تعمل.");
-        return done("أعطينا تلفزيونك الأذونات اللازمة.");
+        return done("أعطينا تلفزيون الرياض الأذونات اللازمة.");
     }
 
     // ---- 3. the safe list (optimize/disable.sh) -------------------------------------------------------------------------------------
@@ -311,10 +311,10 @@ final class SetupEngine {
         Set<String> pk = packages("pm list packages");
         if (pk == null) return failed("لم يقل التلفزيون قائمة تطبيقاته، فما بدّلنا الشاشة الرئيسية.");
         String stock = pk.contains(LAUNCHERX) ? LAUNCHERX_HOME : pk.contains(TVLAUNCHER) ? TVLAUNCHER_HOME : null;
-        if (stock == null) return skipped("ما عرفنا ما الشاشة الرئيسية الأصلية لهذا التلفزيون، فتركناها كما هي (ما غيّرنا شيئاً). تلفزيونك يشتغل كتطبيق.");
+        if (stock == null) return skipped("ما عرفنا ما الشاشة الرئيسية الأصلية لهذا التلفزيون، فتركناها كما هي (ما غيّرنا شيئاً). تلفزيون الرياض يشتغل كتطبيق.");
         String stockPkg = stock.substring(0, stock.indexOf('/'));
         String res = resolveHome();
-        if (res.startsWith(SELF + "/") && !"switching".equals(journal("state"))) return done("تلفزيونك هو الشاشة الرئيسية أصلاً.");
+        if (res.startsWith(SELF + "/") && !"switching".equals(journal("state"))) return done("تلفزيون الرياض هو الشاشة الرئيسية أصلاً.");
         boolean wizardListed = false;
         if (wraithAnswersHome()) {
             String owner = wifiOwner();
@@ -359,18 +359,18 @@ final class SetupEngine {
         sh.run("input keyevent KEYCODE_HOME");
         boolean ok = verifyHome();
         if (!ok) {
-            out.line("الشاشة الرئيسية لم تفتح تلفزيونك: نسأل مرة ثانية.");
+            out.line("الشاشة الرئيسية لم تفتح تلفزيون الرياض: نسأل مرة ثانية.");
             sh.run("cmd role add-role-holder --user 0 android.app.role.HOME " + SELF);
             sh.run("cmd package set-home-activity --user 0 " + q(HOME_ACTIVITY));
             sh.run("input keyevent KEYCODE_HOME");
             ok = verifyHome();
         }
-        if (!ok) return abort(stock, stockPkg, holder, "الشاشة الرئيسية لم تفتح تلفزيونك.", false);
+        if (!ok) return abort(stock, stockPkg, holder, "الشاشة الرئيسية لم تفتح تلفزيون الرياض.", false);
         deadman.disarm();
         clearDeadline();
         journalState("done");
         for (String h : SetupLists.HOME_HELPERS) if (pk.contains(h)) sh.run("pm disable-user --user 0 " + h);   // only now: the stock home's helpers are dead weight
-        return done("تلفزيونك الآن هو الشاشة الرئيسية. اضغط زر الرئيسية في الريموت للتأكد.");
+        return done("تلفزيون الرياض الآن هو الشاشة الرئيسية. اضغط زر الرئيسية في الريموت للتأكد.");
     }
 
     /**
@@ -532,6 +532,6 @@ final class SetupEngine {
         String mode = store.get("install-appop.txt");
         if (mode != null && mode.trim().matches("allow|ignore|deny|default|foreground")) sh.run("appops set " + SELF + " REQUEST_INSTALL_PACKAGES " + mode.trim());
         if (!problems.isEmpty()) return failed(String.join(" ", problems));
-        return done("رجّعنا تلفزيونك كما كان. تطبيق تلفزيونك يبقى مثبتاً؛ تقدر تحذفه من إعدادات التلفزيون (التطبيقات).");
+            return done("رجّعنا إعداد التلفزيون كما كان. تطبيق تلفزيون الرياض يبقى مثبتاً؛ تقدر تحذفه من إعدادات التلفزيون (التطبيقات).");
     }
 }

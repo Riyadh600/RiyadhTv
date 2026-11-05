@@ -384,12 +384,39 @@ final class Prefs {
 
     String photoMinutes() { return sp.getString("photoMinutes", "30"); }
     void setPhotoMinutes(String v) { sp.edit().putString("photoMinutes", v).apply(); }
+    /** The screensaver always moves its existing photo; the home wallpaper is opt-in. */
+    boolean homeMotion() { return sp.getBoolean("homeMotion", false); }
+    void setHomeMotion(boolean v) { sp.edit().putBoolean("homeMotion", v).apply(); }
+    boolean homeAppNames() { return sp.getBoolean("homeAppNames", false); }
+    void setHomeAppNames(boolean v) { sp.edit().putBoolean("homeAppNames", v).apply(); }
+    boolean watchEpisodeNames() { return sp.getBoolean("watchEpisodeNames", false); }
+    void setWatchEpisodeNames(boolean v) { sp.edit().putBoolean("watchEpisodeNames", v).apply(); }
+    boolean livePill() { return sp.getBoolean("livePill", true); }
+    void setLivePill(boolean v) { sp.edit().putBoolean("livePill", v).apply(); }
+    static final String[][] HOME_THEMES = {{"gold", "ليالي الذهب"}, {"sea", "زرقة البحر"}, {"palm", "خضرة النخيل"}, {"violet", "ليلكي"}, {"rose", "وردي هادئ"}};
+    String homeTheme() {
+        String v = sp.getString("homeTheme", "gold");
+        for (String[] t : HOME_THEMES) if (t[0].equals(v)) return v;
+        return "gold";
+    }
+    void setHomeTheme(String v) { for (String[] t : HOME_THEMES) if (t[0].equals(v)) { sp.edit().putString("homeTheme", v).apply(); return; } }
+    static String homeThemeLabel(String v) { for (String[] t : HOME_THEMES) if (t[0].equals(v)) return t[1]; return HOME_THEMES[0][1]; }
+    String backgroundSpeed() {
+        String v = sp.getString("backgroundSpeed", "slow");
+        return "fast".equals(v) || "normal".equals(v) ? v : "slow";
+    }
+    void setBackgroundSpeed(String v) {
+        if ("slow".equals(v) || "normal".equals(v) || "fast".equals(v)) sp.edit().putString("backgroundSpeed", v).apply();
+    }
 
     /**
      * The release «تحديث تلفزيوني» (the home screen's screen and the phone page) and the newest-version line read: "latest" (default), or "next",
      * the test build. For agents only (`saver.sh updatechannel`); no screen shows it and the settings export leaves it out.
      */
-    String updateChannel() { return "next".equals(sp.getString("updateChannel", "latest")) ? "next" : "latest"; }
+    String updateChannel() {
+        String fallback = "next".equals(BuildConfig.BRANCH) ? "next" : "latest";
+        return "next".equals(sp.getString("updateChannel", fallback)) ? "next" : "latest";
+    }
     void setUpdateChannel(String v) { sp.edit().putString("updateChannel", "next".equals(v) ? "next" : "latest").apply(); }
 
     /**
@@ -398,7 +425,7 @@ final class Prefs {
      */
     String latestVersion() {
         String v = sp.getString("latestVersion", null);
-        return v != null && updateChannel().equals(sp.getString("latestChannel", "latest")) ? v : null;
+        return v != null && updateChannel().equals(sp.getString("latestChannel", updateChannel())) ? v : null;
     }
 
     /** The slim bar before the adhan, on the screensaver and on the home screen (default on); sent to the page as #adhanbar=. */
@@ -497,6 +524,7 @@ final class Prefs {
             + "&shows=" + join(ids, ",")
             + "&minrating=" + minRating()
             + "&photos=" + photoMinutes()
+            + "&bgmotion=1&homemotion=" + (homeMotion() ? "1" : "0") + "&appnames=" + (homeAppNames() ? "1" : "0") + "&episodenames=" + (watchEpisodeNames() ? "1" : "0") + "&livepill=" + (livePill() ? "1" : "0") + "&bgspeed=" + backgroundSpeed() + "&hometheme=" + homeTheme()
             + "&digits=" + digits()
             + ClockSetting.fragment(clock24())
             + "&cardstyle=" + cardStyle()

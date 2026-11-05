@@ -48,7 +48,7 @@ final class SettingsHub {
     /** each group header and the category it belongs to: shown only there, above that category's rows of the group */
     static final String[][] HEADERS = {
         {"الموقع", PLACE}, {"المباريات", CONTENT}, {"العرض", SAVER}, {"الأسواق (أعلى اليسار)", CONTENT}, {"بجانب الساعة", SAVER},
-        {"الشاشة الرئيسية (تلفزيونك)", HOME}, {"جديد المسلسلات", CONTENT}, {"الأسهم", CONTENT}, {"التوقيت", SAVER}, {"التطبيق", PHONE},
+        {"الشاشة الرئيسية (تلفزيون الرياض)", HOME}, {"جديد المسلسلات", CONTENT}, {"الأسهم", CONTENT}, {"التوقيت", SAVER}, {"التطبيق", PHONE},
     };
 
     /** The category of a row (its FocusKey.key); one not named goes with its group's ({@code group}, a header's category), else «شاشة التوقف». */

@@ -1,6 +1,6 @@
-<p align="center"><img src=".github/brand/hero.png" alt="تلفزيونك · UrTV" width="100%"></p>
+<p align="center"><img src=".github/brand/hero.png" alt="تلفزيون الرياض · RiyTv" width="100%"></p>
 
-<h1 align="center">تلفزيونك · UrTV</h1>
+<h1 align="center">تلفزيون الرياض · RiyTv</h1>
 
 <p align="center" dir="rtl">واجهة رئيسية عربية وشاشة توقف سعودية لتلفزيونات Android TV و Google TV، وتسريع آمن للتلفزيون.<br>يركّبها لك مساعد ذكاء اصطناعي بأمر واحد.</p>
 
@@ -94,8 +94,8 @@ screen: [docs/RECREATE-PROMPT.md](docs/RECREATE-PROMPT.md).
 
 | | | |
 |---|---|---|
-| **شاشة تلفزيونك** · screensaver | Clock, Hijri date, prayer times and iqama, Ramadan, your teams' matches, weather, markets, and beside the clock your choice of new episodes, today's prayers, the 5-day forecast, all your teams' games, a stock watchlist, or a verse/hadith of the day, over Saudi landscapes | `urtv-screensaver.apk` |
-| **تلفزيونك** · home screen | Clean Arabic launcher: favourites row (5–10 apps) arranged in «ترتيب المفضلة», all apps, inputs, Wi-Fi, settings; «المهام» (tasks, by voice too), optional card from the screensaver (off by default). The «تلاوة» pill opens the Quran and the radio, with the adhan at Umm al-Qura times. App names show in Arabic: the name the setup agent gave it on this TV (`optimize/dock.sh names` / `name`), else the app's own Arabic name, else the one in `res/values/app_names.xml`, else its own name | `urtv-home.apk` |
+| **تلفزيون الرياض · RiyTv** · screensaver | Clock, Hijri date, prayer times and iqama, Ramadan, your teams' matches, weather, markets, and beside the clock your choice of new episodes, today's prayers, the 5-day forecast, all your teams' games, a stock watchlist, or a verse/hadith of the day, over Saudi landscapes | `urtv-screensaver.apk` |
+| **تلفزيون الرياض · RiyTv** · home screen | Clean Arabic launcher: favourites row (5–10 apps) arranged in «ترتيب المفضلة», all apps, inputs, Wi-Fi, settings; «المهام» (tasks, by voice too), optional card from the screensaver (off by default). The «تلاوة» pill opens the Quran and the radio, with the adhan at Umm al-Qura times. App names show in Arabic: the name the setup agent gave it on this TV (`optimize/dock.sh names` / `name`), else the app's own Arabic name, else the one in `res/values/app_names.xml`, else its own name | `urtv-home.apk` |
 | **Two free apps** | [TV Bro](https://github.com/truefedex/tv-bro), a web browser for the TV, and [SmartTube](https://github.com/yuliskov/SmartTube), YouTube without ads, from their own releases (skip with `SKIP_EXTRAS=1`) | `optimize/install.sh extras` |
 | **Speed-up** | Telemetry, ads and demos off (reversibly), closed apps frozen, Play Store kept from running in the background, faster animations | `optimize/` |
 

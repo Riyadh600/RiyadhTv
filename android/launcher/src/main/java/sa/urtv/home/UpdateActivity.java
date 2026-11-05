@@ -35,6 +35,7 @@ public class UpdateActivity extends Activity {
     private LinearLayout col;
     private UpdateRecords.Outcome result;   // what the record of an earlier update says, until the owner checks again
     private boolean askedPermission;
+    private boolean checkedOnOpen, automaticInstallStarted, automaticInstallCancelled;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -68,6 +69,12 @@ public class UpdateActivity extends Activity {
             askedPermission = false;
             result = null;
             PhoneUpdater.check(this);
+        } else if (!checkedOnOpen) {
+            checkedOnOpen = true;
+            if (result == null && !PhoneUpdater.isBusy()) {
+                PhoneUpdater.reset();
+                PhoneUpdater.check(this);
+            }
         }
         render();
     }
@@ -104,7 +111,7 @@ public class UpdateActivity extends Activity {
         } else {
             col.addView(text(UpdateText.NOT_DONE, 22, "Medium", RED, Gravity.RIGHT), right(dp(6)));
             col.addView(text(UpdateText.failedStep(UpdateOrder.label(result.step)), 15, "Regular", DIM, Gravity.RIGHT), right(dp(14)));
-            aiMessage();
+            col.addView(text(UpdateText.CANNOT_UPDATE, 17, "Regular", DIM, Gravity.RIGHT), right(dp(10)));
         }
         return checkButton();
     }
@@ -113,6 +120,7 @@ public class UpdateActivity extends Activity {
         Map<String, Object> st = PhoneUpdater.status();
         String s = (String) st.get("status");
         String why = st.containsKey("reason") ? (String) st.get("reason") : "";
+        String cause = st.containsKey("why") ? (String) st.get("why") : "";
         String detail = st.containsKey("detail") ? (String) st.get("detail") : "";
         Object b = st.get("build");
         String newest = UpdateText.versionOf(BuildConfig.MARKETING, b == null ? 0 : ((Long) b).intValue());
@@ -128,15 +136,15 @@ public class UpdateActivity extends Activity {
                 return checkButton();
             case "found":       // the phone page only read version.txt: pressing downloads, checks, then installs
             case "available":
-                return button(UpdateText.available(newest), GOLD, new View.OnClickListener() {
-                    @Override public void onClick(View v) {
-                        // with a family PIN set and «قفل الإعدادات» on, an install from the TV's own screen asks for it too (the phone's does, PhoneApi)
-                        Parental.guard(UpdateActivity.this, Parental.adhanFirst(UpdateActivity.this), "تحديث تلفزيوني",
-                                ParentalPolicy.targets(ParentalPolicy.UPDATE_SCREEN, null), new Runnable() {
-                                    @Override public void run() { PhoneUpdater.install(UpdateActivity.this, false); }
-                                }, new Runnable() { @Override public void run() { } });
-                    }
-                }, 60);
+                col.addView(text(UpdateText.available(newest), 20, "Medium", GOLD, Gravity.RIGHT), right(dp(8)));
+                if (automaticInstallCancelled) {
+                    return button(UpdateText.INSTALL, GOLD, new View.OnClickListener() {
+                        @Override public void onClick(View v) { automaticInstallCancelled = false; startAutomaticInstall(); }
+                    }, 52);
+                }
+                col.addView(text(UpdateText.STARTING_INSTALL, 16, "Regular", TEXT, Gravity.RIGHT), right(dp(8)));
+                getWindow().getDecorView().post(new Runnable() { @Override public void run() { startAutomaticInstall(); } });
+                return null;
             case "waiting_owner":
                 col.addView(text(UpdateText.CONFIRM, 20, "Medium", GOLD, Gravity.RIGHT), right(dp(6)));
                 if (!detail.isEmpty()) col.addView(text(UpdateOrder.label(detail), 15, "Regular", DIM, Gravity.RIGHT), right(dp(14)));
@@ -179,25 +187,30 @@ public class UpdateActivity extends Activity {
             case "failed":
                 col.addView(text(UpdateText.NOT_DONE, 22, "Medium", RED, Gravity.RIGHT), right(dp(6)));
                 col.addView(text(UpdateText.failedStep(UpdateOrder.label(detail)), 15, "Regular", DIM, Gravity.RIGHT), right(dp(14)));
-                aiMessage();
+                col.addView(text(UpdateText.failure(cause), 17, "Regular", DIM, Gravity.RIGHT), right(dp(10)));
                 return checkButton();
             default:   // "cannot", and anything this screen doesn't know: the same message
-                aiMessage();
+                col.addView(text(UpdateText.failure(cause), 18, "Regular", TEXT, Gravity.RIGHT), right(dp(14)));
                 return checkButton();
         }
     }
 
-    /** The message that sends the owner to their AI assistant, with the repository address small under it. */
-    private void aiMessage() {
-        col.addView(text(UpdateText.AI_MESSAGE, 20, "Medium", TEXT, Gravity.RIGHT), right(dp(8)));
-        TextView repo = text("⁦" + UpdateText.REPO + "⁩", 12, "Regular", DIM, Gravity.RIGHT);
-        col.addView(repo, right(dp(18)));
+    /** Downloads and verifies automatically; Android still asks the owner to confirm each app installation. */
+    private void startAutomaticInstall() {
+        if (automaticInstallStarted || isFinishing()) return;
+        automaticInstallStarted = true;
+        Parental.guard(this, Parental.adhanFirst(this), "تحديث تلفزيوني",
+                ParentalPolicy.targets(ParentalPolicy.UPDATE_SCREEN, null), new Runnable() {
+                    @Override public void run() { PhoneUpdater.install(UpdateActivity.this, false); }
+                }, new Runnable() { @Override public void run() { automaticInstallStarted = false; automaticInstallCancelled = true; render(); } });
     }
 
     private View checkButton() {
         return button(UpdateText.CHECK, GOLD, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 result = null;
+                automaticInstallStarted = false;
+                automaticInstallCancelled = false;
                 PhoneUpdater.reset();
                 PhoneUpdater.check(UpdateActivity.this);
                 render();

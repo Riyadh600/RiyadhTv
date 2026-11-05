@@ -34,6 +34,7 @@ final class Pill extends LinearLayout {
     private String label;
     private float open;   // 0 = icon only, 1 = the name out
     private boolean accent;   // gold icon: something is running (the sleep timer)
+    private boolean spinning;
     private ValueAnimator anim;
 
     Pill(Context c, String label, int iconRes, Typeface face) {
@@ -76,6 +77,19 @@ final class Pill extends LinearLayout {
 
     /** the icon in gold while something runs (the sleep timer), so an unfocused pill still says so */
     void setAccent(boolean on) { accent = on; paint(); }
+
+    void setSpinning(boolean on) {
+        if (spinning == on) return;
+        spinning = on;
+        icon.animate().cancel();
+        if (!on) { icon.setRotation(0f); return; }
+        spin();
+    }
+
+    private void spin() {
+        if (!spinning) return;
+        icon.animate().rotationBy(360f).setDuration(850L).withEndAction(this::spin).start();
+    }
 
     @Override protected void onFocusChanged(boolean gained, int direction, Rect previouslyFocusedRect) {
         super.onFocusChanged(gained, direction, previouslyFocusedRect);

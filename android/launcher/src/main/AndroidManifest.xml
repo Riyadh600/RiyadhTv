@@ -30,7 +30,7 @@
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <!-- «تحكم من الجوال»: changes the city and the home cards through the screensaver's provider (signature permission, same key) -->
     <uses-permission android:name="sa.urtv.screensaver.PHONE_SETTINGS" />
-    <!-- «تحديث تلفزيونك» from the phone: hands the APKs it downloaded to Android's own install screen, where the owner confirms -->
+    <!-- «تحديث تلفزيون الرياض» from the phone: hands the APKs it downloaded to Android's own install screen, where the owner confirms -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- the screensaver (same signing key) asks what is playing, for its «يُتلى الآن» card -->
@@ -96,7 +96,7 @@
     </queries>
 
     <application
-        android:label="تلفزيونك"
+            android:label="تلفزيون الرياض"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
         android:allowBackup="false"
@@ -121,15 +121,15 @@
             </intent-filter>
         </activity>
 
-        <!-- «تلفزيونك»: a tile for the TV's own home screen (the apps row of Google TV), for the one in four setups that keeps the stock home
-             (setupwraith / launcherx): without it UrTV's home could not be opened at all. It opens the same MainActivity by component, with no
+        <!-- «تلفزيون الرياض»: a tile for the TV's own home screen (the apps row of Google TV), for the one in four setups that keeps the stock home
+             (setupwraith / launcherx): without it RiyTv's home could not be opened at all. It opens the same MainActivity by component, with no
              HOME category, so it never changes which home is the default (the HOME entry above is the only one) and cannot loop with the HOME
              intent; MainActivity says Back leaves it when it is not the default home. Our own «كل التطبيقات» skips our package (Dock.scan). -->
         <activity-alias
             android:name=".HomeTile"
             android:targetActivity=".MainActivity"
             android:exported="true"
-            android:label="تلفزيونك"
+            android:label="تلفزيون الرياض"
             android:icon="@mipmap/ic_launcher"
             android:banner="@drawable/banner">
             <intent-filter>
@@ -175,6 +175,19 @@
             android:name=".DockActivity"
             android:exported="true"
             android:label="ترتيب المفضلة"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity
+            android:name=".LiveActivity"
+            android:exported="true"
+            android:label="قنوات البث المباشر"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+        <activity
+            android:name=".LivePlayerActivity"
+            android:exported="false"
+            android:label="البث المباشر"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 

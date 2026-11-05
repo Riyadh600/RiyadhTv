@@ -32,7 +32,11 @@ final class AdhanScheduler {
         // the one place the identity is written, for every schedule from anywhere: what the alarm is REALLY set from (AdhanSync compares with it)
         c.getSharedPreferences("tilawah", Context.MODE_PRIVATE).edit().putString("sched_identity", place.identity()).apply();
         cancelLegacy(c, am);
-        if (!new Prefs(c).adhanOn()) { am.cancel(pending(c, 0, -1)); return; }
+        // The prayer-time heads-up uses the same alarm even when spoken adhan is off.
+        Prefs prefs = new Prefs(c);
+        if (!prefs.adhanOn() && !prefs.prayerNoticeOn()) {
+            am.cancel(pending(c, 0, -1)); return;
+        }
         // the replacement first, then the swap: an alarm is never cancelled for nothing, and a prayer that is due in the next seconds is
         // still the one set (nextAlarm, not next: the screen's 30-second rule would skip it). Setting the same pending intent replaces
         // the old alarm, so there is never one for the old time beside the new.

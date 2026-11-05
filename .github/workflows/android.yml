@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, next]   # next: a test build in apk-next, before anything reaches apk-latest
     paths: ['src/**', 'assets/**', 'android/**', 'VERSION', '.github/workflows/android.yml']
-    # a release whose last commit touches none of these builds nothing (4.1's first try): its merge then needs a change here or in VERSION
+    # a release whose last commit touches none of these builds nothing: its merge then needs a change here or in VERSION
   workflow_dispatch:
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           cp .fonts-private/android/*.otf android/launcher/src/main/assets/fonts/
           rm -rf .fonts-private
 
-      # the name people read (VERSION at the repository root, «4.0»): the release names and bodies use it; the apps read the same file in Gradle
+      # the name people read (VERSION at the repository root): the release names and bodies use it; the apps read the same file in Gradle
       - name: Version
         id: ver
         run: |
@@ -117,7 +117,7 @@ jobs:
             version.txt
           make_latest: true
 
-      # and every build kept under its own tag: APK_TAG=v4.1.N optimize/install.sh all (the older ones are v3.N)
+      # and every build kept under its own tag; each APK is signed with the fork's configured signing key
       - name: Publish to the numbered release
         if: github.ref_name == 'master'
         uses: softprops/action-gh-release@v2

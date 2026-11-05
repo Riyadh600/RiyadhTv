@@ -61,8 +61,14 @@
     background-size:cover;
     background-position:center 26%;
     background-repeat:no-repeat;
-    transform:scale(1.03);   /* edges stay covered while it settles */
+    transform:scale(1.03);   /* extra image area stays beyond the screen edge */
   }
+  .photo.motion{animation:backgroundDrift var(--photo-motion-duration,180s) ease-in-out infinite alternate;will-change:transform}
+  @keyframes backgroundDrift{
+    from{transform:scale(1.03) translate3d(.15%,.10%,0)}
+    to{transform:scale(1.085) translate3d(-.15%,-.10%,0)}
+  }
+  @media (prefers-reduced-motion:reduce){.photo.motion{animation:none;will-change:auto}}
   /* each photo's darkness as a plain black layer: same look as filter:brightness, nothing to recompute */
   .photo::after{content:'';position:absolute;inset:0;background:#000;opacity:var(--dim,.05)}
   .veil{
@@ -495,14 +501,6 @@
     padding-inline:.15em;margin-inline:-.15em;max-width:calc(100% + .3em)}  /* and for a final ر or ن past the ends */
   .none-week{font-size:clamp(26px,2.5vw,54px);font-weight:700;font-family:'ThmanyahDisplay','Thmanyah',serif;color:#A79C85}
 
-  /* A new photo settles in over a minute, then holds still: an endless drift kept the TV redrawing
-     the whole screen 60 times a second, for hours. */
-  @keyframes settle{
-    from{transform:scale(1.055) translate3d(-.55%,-.4%,0)}
-    to{transform:scale(1.03) translate3d(0,0,0)}
-  }
-  @media (prefers-reduced-motion:no-preference){.photo.settle{animation:settle 60s ease-out both}}
-
   /* ===== top left: weather and markets, set like the date block on the right (no boxes) ===== */
   .markets{text-align:left;flex-shrink:0}
   .wxline{display:flex;align-items:baseline;gap:.5em;justify-content:flex-end;line-height:1.3;
@@ -696,6 +694,9 @@ const CONFIG = {
   weekWindowDays: 7,
   // minutes between background photos: #photos=5|10|15|30|60 (anything else = 30)
   photoMinutes: (m => [5,10,15,30,60].includes(m) ? m : 30)(_num('photos', 30)),
+  // the screensaver photo drifts automatically; bgspeed selects a calm duration (the home has its own opt-in switch)
+  backgroundMotion: _Q.get('bgmotion') !== '0',
+  backgroundSpeed: _Q.get('bgspeed') === 'fast' ? '45s' : _Q.get('bgspeed') === 'normal' ? '90s' : '180s',
   // the owner's own photos («صوري»): #own=how many (0-10) and #ownmode=mix (join ours, the default) or only
   own: Math.max(0, Math.min(10, Math.floor(_num('own', 0)))),
   ownMode: _Q.get('ownmode') === 'only' ? 'only' : 'mix',
@@ -3315,19 +3316,20 @@ function showBackground(url, b){
   const ph = document.querySelector('.photo');
   reveal();
   if(!ph) return;
+  ph.classList.toggle('motion', CONFIG.backgroundMotion);
+  ph.style.setProperty('--photo-motion-duration', CONFIG.backgroundSpeed);
   const next = "url('" + url + "')";
   if(ph.style.backgroundImage === next) return;   // same photo: no reload, no new movement
   ph.style.backgroundImage = next;
   ph.style.setProperty('--dim', (1 - (b.d || 0.95)).toFixed(2));
-  ph.classList.remove('settle'); void ph.offsetWidth; ph.classList.add('settle');
   cardBlurLater(url);
   const cr = document.getElementById('credit');
   if(cr) cr.textContent = b.c ? 'الصورة: ' + b.c : '';
 }
 
 // ---- card style blur: a copy of the photo behind the card, blurred once per photo, never a live backdrop-filter ----
-// Made only after the photo has settled (it drifts for 60 s, then holds still) and thrown away when the photo
-// changes, so nothing repaints while the screen is idle. Any failure leaves the card on its plain tint.
+// Made once from the selected photo and thrown away when it changes, so nothing repaints while the screen is idle.
+// Any failure leaves the card on its plain tint.
 const CARD_FILTER = {   // blur px, then the CSS filter functions, as in the approved designs
   dark1:[6,'saturate(140%)'], glass1:[9,'saturate(170%) brightness(.62)'],
   dark3:[6,'saturate(140%)'], glass3:[9,'saturate(160%) brightness(.55)'],

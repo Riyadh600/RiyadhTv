@@ -23,20 +23,20 @@ final class ParentalPolicy {
 
     /** «المصادر», «واي فاي», «الإعدادات» (the TV's), «المهام», «شاشة التوقف», «تلاوة وأذان», «مؤقت النوم», «مركز التحكم»: the pills that can be locked */
     static final String INPUTS = "@inputs", WIFI = "@wifi", TV_SETTINGS = "@tvsettings", TASKS = "@tasks", SAVER = "@saver",
-            LISTEN = "@listen", SLEEP = "@sleep", CENTER = "@center";
+            LISTEN = "@listen", SLEEP = "@sleep", CENTER = "@center", LIVE = "@live";
     /** «قفل الإعدادات»: our own «ترتيب المفضلة» and the long-press menu of the tiles */
     static final String OWN_SETTINGS = "@urtv";
     /** «الرقابة الأبوية» itself: always asks once a PIN is set, it has no toggle */
     static final String PARENTAL = "@parental";
 
     /** The pills a parent can lock, in the order the settings list them. */
-    static final String[] PILLS = {INPUTS, WIFI, TV_SETTINGS, TASKS, SAVER, LISTEN, SLEEP, CENTER};
+    static final String[] PILLS = {INPUTS, WIFI, TV_SETTINGS, TASKS, SAVER, LISTEN, SLEEP, CENTER, LIVE};
 
     /** Where the home screen can be asked to open something from. */
     static final int TILE = 0, GRID = 1, MENU_ARRANGE = 2, MENU = 3, PILL_INPUTS = 4, PILL_WIFI = 5, PILL_TV_SETTINGS = 6, PILL_TASKS = 7,
             CARD_TASKS = 8, PILL_SAVER = 9, PILL_SAVER_SETTINGS = 10, PILL_LISTEN = 11, PILL_SLEEP = 12, INPUT_LIVE_TV = 13,
             INPUT_PICKER = 14, SLEEP_ACCESSIBILITY = 15, MENU_KEY = 16, PARENTAL_SCREEN = 17, ARRANGE_SCREEN = 18, MENU_UPDATE = 19, UPDATE_SCREEN = 20,
-            REMOTE_APP = 21, REMOTE_SETTINGS = 22, PILL_CENTER = 23, PILL_UPDATES = 24, OUR_SETTINGS = 25;
+            REMOTE_APP = 21, REMOTE_SETTINGS = 22, PILL_CENTER = 23, PILL_UPDATES = 24, OUR_SETTINGS = 25, PILL_LIVE = 26;
 
     /**
      * The targets a launch path asks about. pkg: the app it opens, where it knows it (a tile, a row, a package the pill opens); the TV's
@@ -83,6 +83,9 @@ final class ParentalPolicy {
                 break;
             case PILL_LISTEN:
                 t.add(LISTEN);
+                break;
+            case PILL_LIVE:
+                t.add(LIVE);
                 break;
             case PILL_SLEEP:
                 t.add(SLEEP);

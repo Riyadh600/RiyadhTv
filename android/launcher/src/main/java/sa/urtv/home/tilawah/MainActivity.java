@@ -33,7 +33,8 @@ public class MainActivity extends Activity {
     private static final int TAB_RECITERS = 0, TAB_STATIONS = 1, TAB_ADHAN = 2;
 
     private static final int KIND_RESUME = 0, KIND_RECITER = 1, KIND_STATION = 2,
-            KIND_PRAYER = 3, KIND_ADHAN_TOGGLE = 4, KIND_VOICE = 5, KIND_VOLUME = 6, KIND_EXACT = 7, KIND_FAJR_VOICE = 8, KIND_SHORT = 9, KIND_STOPKEY = 10;
+            KIND_PRAYER = 3, KIND_ADHAN_TOGGLE = 4, KIND_VOICE = 5, KIND_VOLUME = 6, KIND_EXACT = 7, KIND_FAJR_VOICE = 8, KIND_SHORT = 9, KIND_STOPKEY = 10,
+            KIND_PRAYER_NOTICE = 11;
 
     private Catalog cat;
     private Prefs prefs;
@@ -105,6 +106,11 @@ public class MainActivity extends Activity {
                 openPlayer();
             } else if (row.kind == KIND_ADHAN_TOGGLE) {
                 prefs.setAdhanOn(!prefs.adhanOn());
+                AdhanScheduler.schedule(this);
+                adapter.rebuild();
+                focusList(list.getSelectedItemPosition());
+            } else if (row.kind == KIND_PRAYER_NOTICE) {
+                prefs.setPrayerNoticeOn(!prefs.prayerNoticeOn());
                 AdhanScheduler.schedule(this);
                 adapter.rebuild();
                 focusList(list.getSelectedItemPosition());
@@ -381,6 +387,8 @@ public class MainActivity extends Activity {
                     toggle += "  •  " + next.name() + " " + PrayerTimes.remaining(next.at - System.currentTimeMillis());
                 }
                 rows.add(new Row(false, KIND_ADHAN_TOGGLE, getString(R.string.adhan_auto), toggle, -1));
+                rows.add(new Row(false, KIND_PRAYER_NOTICE, "تنبيه دخول الصلاة في التطبيقات",
+                        prefs.prayerNoticeOn() ? "يعمل · يظهر عند استخدام تطبيق آخر" : "متوقف", -1));
                 if (prefs.adhanOn() && !AdhanScheduler.exactAllowed(MainActivity.this)) {   // the alarm may be minutes late
                     rows.add(new Row(false, KIND_EXACT, getString(R.string.adhan_exact_title), getString(R.string.adhan_exact_detail), -1));
                 }

@@ -14,6 +14,7 @@ android {
         versionCode((System.getenv('URTV_BUILD_NUMBER') ?: '169') as int)
         versionName file('../../VERSION').text.trim()
         buildConfigField "String", "MARKETING", "\"${file('../../VERSION').text.trim()}\""
+        buildConfigField "String", "BRANCH", "\"${System.getenv('URTV_BRANCH') ?: 'master'}\""
     }
 
     buildFeatures {

@@ -158,9 +158,8 @@ public final class UpdateRun {
         check("done: «تم التحديث ✓ 3.N»", "تم التحديث ✓ 3.52".equals(bare(UpdateText.done("3.52"))), "");
         check("not completed: «ما اكتمل التحديث», and the step", "ما اكتمل التحديث".equals(UpdateText.NOT_DONE) && UpdateText.failedStep(UpdateOrder.label(UpdateOrder.LAUNCHER)).contains("الواجهة")
             && !UpdateOrder.label(UpdateOrder.SAVER).equals(UpdateOrder.label(UpdateOrder.LAUNCHER)), "");
-        check("the message for a TV that can't update itself is exactly the three lines",
-            "التحديث من التلفزيون ما يشتغل على هذا الجهاز.\nاطلب من مساعد الذكاء الاصطناعي على جهازك:\nحدّث تلفزيوني".equals(UpdateText.AI_MESSAGE), UpdateText.AI_MESSAGE);
-        check("and the repository address under it", "github.com/tshi-dev/UrTV".equals(UpdateText.REPO), "");
+        check("automatic install status is clear", "اكتمل التحقق. جارٍ فتح شاشة تثبيت التحديث…".equals(UpdateText.STARTING_INSTALL), "");
+        check("failures are described without an AI handoff or upstream repository", !UpdateText.failure("installer").contains("github.com") && !UpdateText.failure("installer").contains("مساعد الذكاء"), "");
         check("the screen's name and button", "تحديث تلفزيوني".equals(UpdateText.TITLE) && "تحقق من التحديث".equals(UpdateText.CHECK), "");
         check("the installed version line carries the version", bare(UpdateText.installed("3.51")).endsWith("3.51"), "");
         check("the screens show the release's name alone, «4.0», whatever the build", "4.0".equals(UpdateText.versionOf("4.0", 51)), "");

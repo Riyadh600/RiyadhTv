@@ -1,7 +1,7 @@
 package sa.urtv.screensaver;
 
 /**
- * The glass look of every UrTV screen (the owner's choice, «د · زجاج»): flat translucent panels over ONE small, blurred copy of the
+ * The glass look of every RiyTv screen (the owner's choice, «د · زجاج»): flat translucent panels over ONE small, blurred copy of the
  * home's photo, made once when the photo changes, never a live blur. Dark is smoked glass, light frosted white glass with dark ink.
  *
  * <p>The veil over the photo (the scrim) is as strong as THIS photo needs: {@link #scrimAlpha} finds the lightest veil under which

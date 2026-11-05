@@ -29,6 +29,10 @@ final class Prefs {
     /** Off until the user turns it on; there is a switch row for it in «تلاوة». */
     boolean adhanOn() { return sp.getBoolean("adhan_on", false); }
     void setAdhanOn(boolean on) { sp.edit().putBoolean("adhan_on", on).apply(); }
+    boolean prayerNoticeOn() { return sp.getBoolean("prayer_notice_on", true); }
+    void setPrayerNoticeOn(boolean on) { sp.edit().putBoolean("prayer_notice_on", on).apply(); }
+    long lastPrayerNoticeDue() { return sp.getLong("prayer_notice_due", 0L); }
+    void setLastPrayerNoticeDue(long due) { sp.edit().putLong("prayer_notice_due", due).apply(); }
 
     /** The adhan's own volume, in percent; the TV's volume comes back after it. */
     int adhanVolume() { int v = sp.getInt("adhan_volume", 30); return v < 10 || v > 100 ? 30 : v; }

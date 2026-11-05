@@ -1,7 +1,7 @@
 /*
  * Adapted from Free My TV, app/src/io/freemytv/Adb.java (https://github.com/simbasjungles/free-my-tv), MIT License,
  * Copyright (c) 2026 Free My TV contributors. The licence text is in THIRD_PARTY_NOTICES.md at the root of this repository.
- * What UrTV changed: no Android classes (the key, the Base64 coder and the SDK number are passed in, so tests/AdbClientRun.java runs it on a
+ * What RiyTv changed: no Android classes (the key, the Base64 coder and the SDK number are passed in, so tests/AdbClientRun.java runs it on a
  * plain JVM against a fake adbd), a host and port that can be given, an exit code for every command (shell protocol v1 does not carry one),
  * and plain English errors for the screen to map.
  */
