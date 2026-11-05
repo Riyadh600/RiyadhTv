@@ -22,15 +22,26 @@ public final class UpdateText {
     /** The version inside an Arabic line, isolated so its digits and dot keep together. */
     private static String isolate(String s) { return "⁧" + s + "⁩"; }
 
-    public static String installed(String version) { return "الإصدار المثبّت " + isolate(version); }
+    /** The sentences with the version in them (and the failed step's): the Arabic templates, one %s each (Tr.format, as «اللغة» writes them). */
+    public static final String INSTALLED = "الإصدار المثبّت %s", UP_TO_DATE = "تلفزيونك محدّث: %s", AVAILABLE = "تحديث جديد %s · اضغط للتحديث",
+            DONE = "تم التحديث ✓ %s", FAILED_STEP = "الخطوة: %s";
 
     public static String upToDate(String version) { return "تلفزيون الرياض محدّث: " + isolate(version); }
 
-    public static String available(String version) { return "تحديث جديد " + isolate(version) + " · اضغط للتحديث"; }
+    public static String installed(String version) { return installed(version, ARABIC); }
+    public static String installed(String version, Say say) { return say.t(INSTALLED, isolate(version)); }
 
-    public static String done(String version) { return "تم التحديث ✓ " + isolate(version); }
+    public static String upToDate(String version) { return upToDate(version, ARABIC); }
+    public static String upToDate(String version, Say say) { return say.t(UP_TO_DATE, isolate(version)); }
 
-    public static String failedStep(String stepLabel) { return "الخطوة: " + stepLabel; }
+    public static String available(String version) { return available(version, ARABIC); }
+    public static String available(String version, Say say) { return say.t(AVAILABLE, isolate(version)); }
+
+    public static String done(String version) { return done(version, ARABIC); }
+    public static String done(String version, Say say) { return say.t(DONE, isolate(version)); }
+
+    public static String failedStep(String stepLabel) { return failedStep(stepLabel, ARABIC); }
+    public static String failedStep(String stepLabel, Say say) { return say.t(FAILED_STEP, stepLabel); }
 
     public static String failure(String why) {
         if ("download".equals(why)) return "تعذّر تنزيل ملفات التحديث. تحقق من اتصال الإنترنت ثم أعد المحاولة.";

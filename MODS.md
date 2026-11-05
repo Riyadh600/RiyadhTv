@@ -93,7 +93,28 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 
 ## 2026-11-06 — Fix RiyTv update screen build
 
-- ndroid/launcher/.../phone/UpdateChannel.java: import the launcher BuildConfig used to select the update channel.
-- ndroid/launcher/.../UpdateActivity.java: pass the update failure cause into the error renderer.
-- ndroid/launcher/src/main/res/drawable/ic_sync.xml: add the missing refresh icon used by the top update shortcut.
+- android/launcher/.../phone/UpdateChannel.java: import the launcher BuildConfig used to select the update channel.
+- android/launcher/.../UpdateActivity.java: pass the update failure cause into the error renderer.
+- android/launcher/src/main/res/drawable/ic_sync.xml: add the missing refresh icon used by the top update shortcut.
 - Reason: fix the four Java compile errors reported by GitHub Actions for the RiyTv branding build.
+
+## 2026-11-06 — Home polish, wired phone control, and playback
+
+- `MainActivity.java`, `Pill.java`, and `ic_phone_remote.xml`: move the update shortcut directly after Sources, add a phone-control shortcut beside Control Center, allow long-press plus D-pad movement to reorder and save top-row icons, reduce home edge margins, make wallpaper drift visibly faster, keep favourite labels hidden when disabled, hide the Watch Next heading by default, use RiyTv themed glass colors across dialogs and top icons, and launch Android's uninstall confirmation with the package uninstall action.
+- `GlassSource.java`, `Pill.java`, and `ControlCenter.java` consumers: tint glass surfaces and icons with the selected RiyTv home theme.
+- `Prefs.java`, `ConfigProvider.java`, `SettingsActivity.java`, `SettingsHub.java`, `ConfigSnapshot.java`, and `MainActivity.java`: add independent Screensaver motion enable/speed and a Watch Next heading switch; add four all-apps icon/grid sizes; put digit selection in the home-screen settings category; move phone control out of the update category; expose the TV's system date/time settings there.
+- `LiveActivity.java`, `LiveChannels.java`, `LivePlayerActivity.java`, and `AndroidManifest.xml`: change live entries to a TV-friendly tile grid with long-press add/edit/delete actions; prefer SmartTube or the TV YouTube app to avoid embedded-WebView black screens.
+- `Guard.java`, `PhoneNet.java`, `PhoneHost.java`, `PhoneControl.java`, `PhoneActivity.java`, `PhoneRun.java`, and phone documentation: allow the phone remote to listen on the TV's private Ethernet IPv4 when Wi-Fi is inactive, for a phone on Wi-Fi on the same router.
+- `src/template.html`: tighten the Screensaver stage and bottom strip spacing; use faster motion durations.
+- `tests/settings_hub_test.py`: update checks for the new settings ownership and date/time row.
+- Reason: apply the requested layout and playback corrections, extend phone control across a wired TV and wireless phone on the same LAN, and make controls visually consistent with RiyTv.
+- Verification limit: the current shell has no Git, Python, Java, or Gradle executable available; the TV's Ethernet cable is currently unplugged. No new APK was installed.
+
+## 2026-11-06 — Merge upstream UrTV 4.2.204 (build 204)
+
+- Merge the pinned upstream release source at `63c7c418c83f2974fcfd3759e1b21902cc004615` into RiyadhTV `next`; import its code, data, docs, assets, and release tests.
+- Bring in scheduled task reminders, the optional football home and matches pages, markets and portfolio, Android 14 target changes, casting preservation, low-memory behavior, and expanded settings.
+- Preserve RiyTv's own signing workflow and version-code sequence, fork update channel, app identity, live-channel manager, Watch Next sizing/order, home themes and spacing, and the custom prayer-time notice.
+- Resolve shared provider, settings snapshot, focus-policy, manifest, and prayer-alarm changes so the upstream features and RiyTv controls can coexist. Keep RiyTv-specific branding and user-facing update text.
+- Reason: take the upstream 4.2.204 improvements while retaining the fork's requested behavior and keeping future upstream merges traceable.
+- Verification: GitHub Actions on the merge proposal must pass before producing a test APK. No APK is installed on the TV by this change.
