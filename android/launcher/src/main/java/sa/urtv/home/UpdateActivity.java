@@ -161,13 +161,13 @@ public class UpdateActivity extends Activity {
                 col.addView(text(UpdateText.done(newest), 22, "Medium", GOLD, Gravity.RIGHT), right(dp(16)));
                 return null;
             case "error":
-                return renderError(why, detail);
+                return renderError(why, detail, cause);
             default:
                 return checkButton();
         }
     }
 
-    private View renderError(String why, String detail) {
+    private View renderError(String why, String detail, String cause) {
         switch (why) {
             case "offline":
                 col.addView(text(UpdateText.OFFLINE, 20, "Medium", RED, Gravity.RIGHT), right(dp(16)));

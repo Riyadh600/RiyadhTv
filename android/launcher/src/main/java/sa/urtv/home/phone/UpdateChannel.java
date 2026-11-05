@@ -4,6 +4,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
+import sa.urtv.home.BuildConfig;
+
 /**
  * Which release «تحديث تلفزيوني» reads: "latest" (always, unless an agent changed it) or "next", the test build. The screensaver keeps the
  * word (`optimize/saver.sh updatechannel`, no screen shows it) and tells it through its ConfigProvider (same key); an older screensaver, or

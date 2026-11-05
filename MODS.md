@@ -90,3 +90,10 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Android app labels, update/help text, `webos/appinfo.json`, `tizen/config.xml`, and `README.md`: show «تلفزيون الرياض» / «RiyTv» as product branding.
 - Reason: replace the old banner wordmark and use one consistent RiyTv identity across the repository's TV builds.
 - Compatibility: Android application IDs, signature permissions, provider URIs, API/session headers, release asset names, and upstream data URLs retain their existing identifiers so installed RiyTv builds can update and the two APKs remain connected.
+
+## 2026-11-06 — Fix RiyTv update screen build
+
+- ndroid/launcher/.../phone/UpdateChannel.java: import the launcher BuildConfig used to select the update channel.
+- ndroid/launcher/.../UpdateActivity.java: pass the update failure cause into the error renderer.
+- ndroid/launcher/src/main/res/drawable/ic_sync.xml: add the missing refresh icon used by the top update shortcut.
+- Reason: fix the four Java compile errors reported by GitHub Actions for the RiyTv branding build.
