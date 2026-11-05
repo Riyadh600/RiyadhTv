@@ -37,3 +37,8 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - `android/launcher/.../ConfigSnapshot.java`, `TvRowsPick.java`, and `MainActivity.java`: read the setting and recalculate row layout when the selected size changes.
 - `optimize/saver.sh`, `docs/FEATURES.md`, and `docs/SETTINGS.md`: document the four sizes and command interface.
 - Reason: let the owner choose natural, large (up to 4 cards), larger (up to 3), or largest (up to 2) card widths from settings.
+
+## 2026-11-05 — Continue version numbering from the installed TV build
+
+- `.github/workflows/android.yml`, `android/app/build.gradle`, and `android/launcher/build.gradle`: build numbers start at 169, continuing after build 168 reported by the TV, then increase with each GitHub Actions run. APKs and the updater's `version.txt` use the same number.
+- Reason: let Android accept the fork APK as a newer version while keeping future fork builds in increasing order.
