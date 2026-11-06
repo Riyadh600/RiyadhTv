@@ -29,6 +29,9 @@ jobs:
           mkdir -p android/launcher/src/main/assets/fonts
           cp .fonts-private/android/*.otf android/launcher/src/main/assets/fonts/
           rm -rf .fonts-private
+      - name: Mark the fork font fallback
+        if: github.repository != 'tshi-dev/UrTV'
+        run: echo "URTV_NO_PRIVATE_FONTS=1" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: 22

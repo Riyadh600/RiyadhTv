@@ -1,5 +1,8 @@
 package sa.urtv.home;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
