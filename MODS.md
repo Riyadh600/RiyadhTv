@@ -125,3 +125,5 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - `android/launcher/.../phone/UpdateText.java`: keep the fork's Arabic update messages and remove duplicate upstream overloads that referenced missing language types.
 - `.github/workflows/checks.yml` and `tests/check.py`: keep non-font checks active in RiyTv Actions; treat missing licensed Thmanyah files as the documented system-font fallback and skip only licensed glyph/fresh-dist checks that cannot be measured without them.
 - Reason: resolve Java compilation failures from the merge and make fork CI work without access to the upstream private fonts repository.
+
+- Follow-up CI fix: retain the upstream language callback overloads in `UpdateText.java` while keeping the fork's Arabic up-to-date message; set the live-player WebView text zoom explicitly to 100%.
