@@ -533,23 +533,33 @@ public class MainActivity extends Activity {
         dockRow.setLayoutDirection(Dir.layout());   // the first favourite on the right in Arabic, on the left in English (tester step 20)
         dockRow.setClipChildren(false);
         dockRow.setClipToPadding(false);
-        dockRow.setPadding(dp(10), dp(9), dp(10), dp(9));
+        dockRow.setPadding(bar(FavBar.PAD_SIDE), bar(FavBar.PAD_TOP), bar(FavBar.PAD_SIDE), bar(FavBar.PAD_TOP));
         GradientDrawable band = dockBand = new GradientDrawable();
-        band.setCornerRadius(dp(26));
-        band.setColor(0x12FFFFFF);
-        band.setStroke(dp(1), 0x0CFFFFFF);
-        dockRow.setBackground(band);
+        band.setCornerRadius(bar(FavBar.RADIUS));
+        band.setColor(FavBar.FILL_DARK);
+        band.setStroke(Math.max(1, bar(1)), FavBar.LINE_DARK);
+        tray = new TraySnap(this);
+        tray.setHorizontalScrollBarEnabled(false);
+        tray.setFillViewport(true);
+        tray.setClipToPadding(true);
+        tray.setClipChildren(true);
+        tray.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(View v, android.graphics.Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), bar(FavBar.RADIUS)); }
+        });
+        tray.setClipToOutline(true);
+        tray.setBackground(band);
+        tray.addView(dockRow, new FrameLayout.LayoutParams(-2, -1));
+        tray.setOnScrollChangeListener((v, x, y, ox, oy) -> placeName());
+        tray.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> tray.wholeOnly());
 
         // «أكمل المشاهدة»: larger cards above the favourites, in the first screen with the clock and the photo.
         tvRowsBox = new LinearLayout(this);
         tvRowsBox.setOrientation(LinearLayout.VERTICAL);
         tvRowsBox.setClipChildren(false);
         tvRowsBox.setClipToPadding(false);
-        tvRowsBox.setPadding(dp(10), 0, dp(10), 0);
+        tvRowsBox.setPadding(bar(FavBar.PAD_SIDE), 0, bar(FavBar.PAD_SIDE), 0);
         bottom.addView(tvRowsBox, new LinearLayout.LayoutParams(-1, -2));
-        bottom.addView(dockRow, new LinearLayout.LayoutParams(-1, -2));
-
-        content.addView(tvRowsBox, llp(-1, -2, bar(FavBar.SIDE), 0, bar(FavBar.SIDE), 0));
+        bottom.addView(tray, new LinearLayout.LayoutParams(-1, bar(FavBar.TRAY_H)));
 
         appsLabel = text(11, "sans-serif-medium", 0x99FFFFFF);
         appsLabel.setText(S.t("كل التطبيقات"));
