@@ -463,11 +463,3 @@ check("assets/shared/broadcast.json: each row has its source link and seasons, a
 print()
 print(f"{len(failures)} failed" if failures else "all checks passed")
 sys.exit(1 if failures else 0)
-
-
-## 2026-11-06 — Merge build fixes
-
-- `android/launcher/.../MainActivity.java`: restore the missing `ValueAnimator` import needed by the upstream theme and RiyTv wallpaper motion.
-- `android/launcher/.../phone/UpdateText.java`: keep the fork's Arabic update messages and remove duplicate upstream overloads that referenced missing language types.
-- `.github/workflows/checks.yml` and `tests/check.py`: keep non-font checks active in RiyTv Actions; treat missing licensed Thmanyah files as the documented system-font fallback and skip only licensed glyph/fresh-dist checks that cannot be measured without them.
-- Reason: resolve Java compilation failures from the merge and make fork CI work without access to the upstream private fonts repository.

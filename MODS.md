@@ -118,3 +118,10 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Resolve shared provider, settings snapshot, focus-policy, manifest, and prayer-alarm changes so the upstream features and RiyTv controls can coexist. Keep RiyTv-specific branding and user-facing update text.
 - Reason: take the upstream 4.2.204 improvements while retaining the fork's requested behavior and keeping future upstream merges traceable.
 - Verification: GitHub Actions on the merge proposal must pass before producing a test APK. No APK is installed on the TV by this change.
+
+## 2026-11-06 — Merge build fixes
+
+- `android/launcher/.../MainActivity.java`: restore the missing `ValueAnimator` import needed by the upstream theme and RiyTv wallpaper motion.
+- `android/launcher/.../phone/UpdateText.java`: keep the fork's Arabic update messages and remove duplicate upstream overloads that referenced missing language types.
+- `.github/workflows/checks.yml` and `tests/check.py`: keep non-font checks active in RiyTv Actions; treat missing licensed Thmanyah files as the documented system-font fallback and skip only licensed glyph/fresh-dist checks that cannot be measured without them.
+- Reason: resolve Java compilation failures from the merge and make fork CI work without access to the upstream private fonts repository.
