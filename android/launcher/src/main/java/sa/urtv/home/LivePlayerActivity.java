@@ -27,6 +27,7 @@ public final class LivePlayerActivity extends Activity {
         if (id == null || !id.matches("[A-Za-z0-9_-]{11}")) { finish(); return; }
         web = new WebView(this);
         WebSettings s = web.getSettings();
+        s.setTextZoom(100);
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);

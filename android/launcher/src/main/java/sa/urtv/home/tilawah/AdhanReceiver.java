@@ -4,9 +4,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
+import android.util.Log;
 
 /**
- * Plays the adhan when its alarm goes off — pausing a surah that is playing and resuming it after —
+ * Plays the adhan when its alarm goes off (and shows «تنبيه عند الأذان», and starts the screensaver for «شاشة التوقف وقت الأذان», when those are on, with the adhan on or not) — pausing a surah that is playing and resuming it after —
  * and sets the next alarm again after a reboot, a clock change or an update.
  *
  * The adhan only starts while the TV is on: an alarm that arrives in standby is skipped, and none is
@@ -31,16 +32,21 @@ public class AdhanReceiver extends BroadcastReceiver {
 
         long now = System.currentTimeMillis();
         long due = intent.getLongExtra(AdhanScheduler.EXTRA_DUE, 0);
-        if (screenOn(context)) {
-            int prayer = intent.getIntExtra(AdhanScheduler.EXTRA_PRAYER, -1);
-            if (prefs.prayerNoticeOn() && prayer >= 0 && prefs.lastPrayerNoticeDue() != due) {
+        if (prefs.alarmWanted() && screenOn(context) && !alreadyPlayed(prefs, due, now)) {
+            if (due > 0) prefs.setLastDue(due); else prefs.setLastAlarmAt(now);
+            int prayer = intent.getIntExtra(AdhanScheduler.EXTRA_PRAYER, -1);   // an older alarm has no prayer: the usual voice
+            int front = AdhanFront.now(context);
+            boolean play = prefs.adhanOn() && AdhanPlan.mayPlay(prefs.adhanSaverOnly(), front);
+            boolean notice = prefs.adhanNotice() || prefs.prayerNoticeOn();
+            if (play) MusicService.adhan(context, prefs.playVoiceFor(context, prayer == PrayerTimes.FAJR), null, 0, prayer);
+            else if (prefs.adhanOn()) Log.i("UrTVAdhan", "adhan skipped: another app is in front (saver-only is on)");
+            boolean noticeShown = notice && prayer >= 0 && prefs.lastPrayerNoticeDue() != due;
+            if (noticeShown) {
                 prefs.setLastPrayerNoticeDue(due);
-                PrayerTimeNotice.showIfAnotherAppIsInFront(context, prayer);
+                PrayerTimeNotice.showIfAnotherAppIsInFront(context, prayer);   // RiyTv wording, clock and no duplicate notice on the home
             }
-            if (prefs.adhanOn() && !alreadyPlayed(prefs, due, now)) {
-                if (due > 0) prefs.setLastDue(due); else prefs.setLastAlarmAt(now);
-                MusicService.adhan(context, prefs.playVoiceFor(context, prayer == PrayerTimes.FAJR), null, 0, prayer);
-            }
+            boolean saver = AdhanPlan.startSaver(prefs.adhanSaverAt(), front) && AdhanSaver.start(context);
+            prefs.setLastAlarmNote(AdhanPlan.note(front, play, noticeShown, saver), now);
         }
         AdhanScheduler.schedule(context);
         PrayerTimes.refresh(context, null);

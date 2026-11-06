@@ -5,6 +5,7 @@ on:
     branches: [master, next]   # next: a test build in apk-next, before anything reaches apk-latest
     paths: ['src/**', 'assets/**', 'android/**', 'VERSION', '.github/workflows/android.yml']
     # a release whose last commit touches none of these builds nothing: its merge then needs a change here or in VERSION
+    # 4.2 too: a fix after the release merge that touches only .github/tools (the cities generator) builds nothing, and its own build is this line, and so is the veil test's CI tolerance after it
   workflow_dispatch:
 
 permissions:
@@ -21,7 +22,7 @@ jobs:
   apk:
     needs: checks
     if: ${{ !cancelled() && (needs.checks.result == 'success' || needs.checks.result == 'skipped') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       # Thmanyah's licence allows its files only inside a built product: they live in the private
@@ -79,6 +80,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           URTV_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
           URTV_BRANCH: ${{ github.ref_name }}   # the screensaver fetches its page from the branch it was built from
+          URTV_PIN_RECOVERY: ${{ secrets.PIN_RECOVERY_RECORD }}   # the PIN recovery code's salted record, never the code; unset = none (AGENTS.md)
         run: gradle -p android assembleRelease --no-daemon
 
       - name: Rename

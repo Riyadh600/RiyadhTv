@@ -54,7 +54,7 @@ check("the bundled place is marked, and its identity is '' (no real place matche
 sync = text(T + "AdhanSync.java")
 on = sync[sync.index("public static void onConfig"):sync.index("/** The shell asks")]
 check("the ticket travels with the settings read: ConfigSnapshot takes it before the provider is asked, a cached or old copy keeps it, and every place caller passes placeTicket() with placeFragment()",
-      "long ticket = sa.urtv.home.tilawah.PlaceTicket.next();   // before the provider is asked" in snap0 and "appearance, watchNextOn, look, true, placeTicket)" in snap0 and "long placeTicket() { return placeTicket; }" in snap0
+      "long ticket = sa.urtv.home.tilawah.PlaceTicket.next();   // before the provider is asked" in snap0 and "appearance, watchNextOn, watchNextSize, look, true, placeTicket)" in snap0 and "long placeTicket() { return placeTicket; }" in snap0
       and all(all(c in text(H + f) for c in cs) for f, cs in {"AdhanBar.java": ["snap.placeFragment(), snap.placeTicket()"], "Greeting.java": ["snap.placeFragment(), snap.placeTicket()"], "MainActivity.java": ["cfg.placeFragment(), cfg.placeTicket()"]}.items())
       and "public static DayParts now(Context c, String fragment, long ticket)" in text(T + "DayParts.java") and "onConfig(Context c, String fragment, long ticket)" in text(T + "AdhanSync.java"))
 check("the scheduler runs one at a time", "static synchronized void schedule(Context c, Place place)" in text(T + "AdhanScheduler.java"))
