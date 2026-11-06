@@ -133,3 +133,5 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Follow-up merge-test fix: update `tests/place_choice_test.py` for the added `watchNextSize` constructor field while retaining its place-ticket ordering checks.
 
 - Follow-up branding test: update `tests/SetupEngineRun.java` to expect the RiyTv home-screen label in the idempotent setup message.
+
+- Follow-up compatibility tests: update `tests/fix181_test.py` to recognize the merged provider's `watch_next_size` field and the existing 10-favourite guard/toast in RiyTv's current menu.
