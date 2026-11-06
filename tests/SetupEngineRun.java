@@ -239,7 +239,7 @@ public class SetupEngineRun {
         e2.precheck(); e2.grants(); e2.debloat(); e2.screensaver(); e2.home();
         String ledger1 = m2.get("disabled-by-us.txt");
         e2.precheck(); e2.grants(); e2.debloat(); e2.screensaver(); SetupEngine.Result again = e2.home();
-        line("A2 " + ledger1.equals(m2.get("disabled-by-us.txt")) + " " + again.status + " " + again.message.startsWith("تلفزيونك هو الشاشة الرئيسية أصلاً"));
+        line("A2 " + ledger1.equals(m2.get("disabled-by-us.txt")) + " " + again.status + " " + again.message.startsWith("تلفزيون الرياض هو الشاشة الرئيسية أصلاً"));
         // B: the TV does not end the list of disabled packages: nothing is turned off, nothing remembered
         FakeTv tb = tv(); tb.dashFailsMarker = true; Mem mb = new Mem();
         SetupEngine.Result rb = engine(tb, mb, new Dead(), new ArrayList<>()).debloat();

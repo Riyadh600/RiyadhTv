@@ -131,3 +131,5 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Follow-up branding check: update `tests/tilawah_test.py` to expect the requested RiyTv app label while retaining the «متابعة التلاوة» section name.
 
 - Follow-up merge-test fix: update `tests/place_choice_test.py` for the added `watchNextSize` constructor field while retaining its place-ticket ordering checks.
+
+- Follow-up branding test: update `tests/SetupEngineRun.java` to expect the RiyTv home-screen label in the idempotent setup message.
