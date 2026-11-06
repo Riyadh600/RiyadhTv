@@ -31,11 +31,13 @@ jobs:
       - uses: actions/checkout@v4
       # Thmanyah comes from the private fonts repository, as in android.yml: built in, never committed
       - uses: actions/checkout@v4
+        if: github.repository == 'tshi-dev/UrTV'
         with:
           repository: tshi-dev/urtv-fonts
           token: ${{ secrets.FONTS_TOKEN }}
           path: .fonts-private
       - name: Private fonts
+        if: github.repository == 'tshi-dev/UrTV'
         run: |
           cp .fonts-private/web/*.woff2 assets/fonts/
           mkdir -p android/launcher/src/main/assets/fonts
