@@ -129,3 +129,5 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Follow-up CI fix: retain the upstream language callback overloads in `UpdateText.java` while keeping the fork's Arabic up-to-date message; set the live-player WebView text zoom explicitly to 100%.
 
 - Follow-up branding check: update `tests/tilawah_test.py` to expect the requested RiyTv app label while retaining the «متابعة التلاوة» section name.
+
+- Follow-up merge-test fix: update `tests/place_choice_test.py` for the added `watchNextSize` constructor field while retaining its place-ticket ordering checks.
