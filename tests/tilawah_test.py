@@ -174,7 +174,7 @@ for permission in ["android.permission.WAKE_LOCK", "android.permission.FOREGROUN
 # ---- the label and the pill in the home screen
 strings = ET.parse(APP / "res/values/strings.xml").getroot()
 labels = {s.get("name"): s.text for s in strings.findall("string")}
-check("the screen is called «تلاوة وأذان»", labels.get("app_name") == "تلاوة وأذان", labels.get("app_name"))
+check("the screensaver app uses the RiyTv Arabic brand", labels.get("app_name") == "تلفزيون الرياض", labels.get("app_name"))
 check("the continue row is «متابعة التلاوة»",
       labels.get("continue_listening") == "متابعة التلاوة", labels.get("continue_listening"))
 

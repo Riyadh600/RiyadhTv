@@ -127,3 +127,5 @@ Resolve any conflicts in the fork, review this ledger, and build/publish from th
 - Reason: resolve Java compilation failures from the merge and make fork CI work without access to the upstream private fonts repository.
 
 - Follow-up CI fix: retain the upstream language callback overloads in `UpdateText.java` while keeping the fork's Arabic up-to-date message; set the live-player WebView text zoom explicitly to 100%.
+
+- Follow-up branding check: update `tests/tilawah_test.py` to expect the requested RiyTv app label while retaining the «متابعة التلاوة» section name.
