@@ -17,11 +17,13 @@ jobs:
       # Thmanyah's licence allows its files only inside a built product: they live in the private
       # tshi-dev/urtv-fonts and are put in place here, never committed to this repository
       - uses: actions/checkout@v4
+        if: github.repository == 'tshi-dev/UrTV'
         with:
           repository: tshi-dev/urtv-fonts
           token: ${{ secrets.FONTS_TOKEN }}
           path: .fonts-private
       - name: Private fonts
+        if: github.repository == 'tshi-dev/UrTV'
         run: |
           cp .fonts-private/web/*.woff2 assets/fonts/
           mkdir -p android/launcher/src/main/assets/fonts
