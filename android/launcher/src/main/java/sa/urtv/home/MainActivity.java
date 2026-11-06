@@ -1,7 +1,8 @@
 package sa.urtv.home;
 
 import android.animation.ArgbEvaluator;
-import android.animation.ValueAnimator;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 
 import android.Manifest;
 import android.app.Activity;
@@ -109,7 +110,7 @@ public class MainActivity extends Activity {
     private GradientDrawable glowDrawable;   // the one gradient, its colours changed in place (no allocation per move)
     private float glowAlphaTo = -1f, shadeTo = 0f;
     private ImageView wallBack, wallFront;
-    private ValueAnimator wallpaperMotion;
+    private ObjectAnimator wallpaperMotion;
     private View gridShade;
     private String[] wallpapers = new String[0];
     private int wallIndex = -1;
@@ -458,7 +459,27 @@ public class MainActivity extends Activity {
         // optional card under the pills, same size as beside the screensaver's clock
         homeCard = new HomeCard(this, hero, lp(dp(461), dp(250), Gravity.LEFT | Gravity.TOP, dp(26), dp(72), 0, 0), this::homeCardBox, new HomeCard.Live() {
             @Override public void focus(View target, boolean has) {   // «المهام» on the card takes the focus like a pill
-                if (has) { lastFocusedId = target.getId(); glideTo(0); fadeGlow(1f); }
+                if (has) {
+                    lastFocusedId = target.getId(); glideTo(0); fadeGlow(1f);
+                    target.setOnKeyListener((v, event) -> {
+                        if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                        int keyCode = event.getKeyCode();
+                        if (keyCode != KeyEvent.KEYCODE_DPAD_UP) return false;
+                        android.graphics.Rect visible = new android.graphics.Rect();
+                        View previous = findViewById(lastPillId);
+                        if (previous != null && previous.isShown() && previous.isFocusable() && previous.getGlobalVisibleRect(visible)) {
+                            previous.requestFocus();
+                            return true;
+                        }
+                        for (View pv : pills) {
+                            if (pv.isShown() && pv.isFocusable() && pv.getGlobalVisibleRect(visible)) {
+                                pv.requestFocus();
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+                }
             }
             @Override public void open() {   // OK: the list, with the focus on «🎤 تكلّم» so one more OK starts the voice adding
                 launchGuarded(ParentalPolicy.CARD_TASKS, new Intent(MainActivity.this, TasksActivity.class).putExtra(TasksActivity.EXTRA_MIC, true), S.t("المهام"));
@@ -3122,16 +3143,13 @@ public class MainActivity extends Activity {
         stopWallpaperMotion();
         if (!resumed || wallFront == null || wallFront.getDrawable() == null || !backgroundMotionEnabled()) return;
         final ImageView target = wallFront;
-        wallpaperMotion = ValueAnimator.ofFloat(1f, 1.055f);
+        wallpaperMotion = ObjectAnimator.ofPropertyValuesHolder(target,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.055f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.055f));
         String speed = ConfigSnapshot.read(this).backgroundSpeed();
         wallpaperMotion.setDuration("fast".equals(speed) ? 45000L : "normal".equals(speed) ? 90000L : 180000L);
-        wallpaperMotion.setRepeatCount(ValueAnimator.INFINITE);
-        wallpaperMotion.setRepeatMode(ValueAnimator.REVERSE);
-        wallpaperMotion.addUpdateListener(a -> {
-            float scale = (Float) a.getAnimatedValue();
-            target.setScaleX(scale);
-            target.setScaleY(scale);
-        });
+        wallpaperMotion.setRepeatCount(ObjectAnimator.INFINITE);
+        wallpaperMotion.setRepeatMode(ObjectAnimator.REVERSE);
         wallpaperMotion.start();
     }
 
