@@ -461,9 +461,8 @@ public class MainActivity extends Activity {
             @Override public void focus(View target, boolean has) {   // «المهام» on the card takes the focus like a pill
                 if (has) {
                     lastFocusedId = target.getId(); glideTo(0); fadeGlow(1f);
-                    target.setOnKeyListener((v, event) -> {
+                    target.setOnKeyListener((v, keyCode, event) -> {
                         if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-                        int keyCode = event.getKeyCode();
                         if (keyCode != KeyEvent.KEYCODE_DPAD_UP) return false;
                         android.graphics.Rect visible = new android.graphics.Rect();
                         View previous = findViewById(lastPillId);
